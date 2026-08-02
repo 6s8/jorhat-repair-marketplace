@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import 'job_status_tracker_provider.dart';
 
 /// Real-time Customer Order Tracking Screen.
@@ -120,6 +122,18 @@ class JobStatusTrackerScreen extends ConsumerWidget {
                     _StatusStepper(state: trackerState),
 
                   const SizedBox(height: 24),
+
+                  // Live map — only shown when technician is on_the_way
+                  if (!trackerState.isLoading &&
+                      trackerState.status == TrackedJobStatus.inProgress &&
+                      trackerState.customerLat != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: _LiveTrackingMap(
+                        customerLat: trackerState.customerLat!,
+                        customerLng: trackerState.customerLng!,
+                      ),
+                    ),
 
                   // Live indicator
                   if (!trackerState.isLoading && trackerState.errorMessage == null)
@@ -542,6 +556,269 @@ class _HelpCard extends StatelessWidget {
           Icon(Icons.call_rounded, color: Colors.orange.withValues(alpha: 0.8)),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Live Tracking Map — shown when technician is on_the_way
+// Shows the customer's pinned location + an animated "technician moving" dot.
+// ─────────────────────────────────────────────────────────────────────────────
+class _LiveTrackingMap extends StatefulWidget {
+  final double customerLat;
+  final double customerLng;
+
+  const _LiveTrackingMap({
+    required this.customerLat,
+    required this.customerLng,
+  });
+
+  @override
+  State<_LiveTrackingMap> createState() => _LiveTrackingMapState();
+}
+
+class _LiveTrackingMapState extends State<_LiveTrackingMap>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _pulseAnim =
+        Tween<double>(begin: 0.6, end: 1.0).animate(_pulseController);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final customerPoint =
+        LatLng(widget.customerLat, widget.customerLng);
+
+    // Simulate technician ~0.8 km north-east of customer
+    final techPoint = LatLng(
+      widget.customerLat + 0.007,
+      widget.customerLng + 0.007,
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+            color: const Color(0xFF1565C0).withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+              color: const Color(0xFF1565C0).withValues(alpha: 0.15),
+              blurRadius: 20,
+              spreadRadius: 2),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ──────────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                  colors: [Color(0xFFE65100), Color(0xFFF57C00)]),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.directions_car_rounded,
+                    color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                const Text(
+                  'Technician is on the way',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14),
+                ),
+                const Spacer(),
+                AnimatedBuilder(
+                  animation: _pulseAnim,
+                  builder: (_, __) => Opacity(
+                    opacity: _pulseAnim.value,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                          color: Colors.white, shape: BoxShape.circle),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text('LIVE',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+
+          // ── Map ─────────────────────────────────────────────────────────
+          SizedBox(
+            height: 220,
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: LatLng(
+                  (customerPoint.latitude + techPoint.latitude) / 2,
+                  (customerPoint.longitude + techPoint.longitude) / 2,
+                ),
+                initialZoom: 14.0,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName:
+                      'com.jorhat.repair_marketplace',
+                ),
+                // Route line (simplified straight line)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: [techPoint, customerPoint],
+                      strokeWidth: 3.5,
+                      color: const Color(0xFF1565C0),
+                      pattern: StrokePattern.dashed(segments: const [8, 6]),
+                    ),
+                  ],
+                ),
+                MarkerLayer(
+                  markers: [
+                    // Customer home pin
+                    Marker(
+                      point: customerPoint,
+                      width: 50,
+                      height: 65,
+                      child: Column(children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1565C0),
+                            shape: BoxShape.circle,
+                            border:
+                                Border.all(color: Colors.white, width: 2.5),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: const Color(0xFF1565C0)
+                                      .withValues(alpha: 0.4),
+                                  blurRadius: 8)
+                            ],
+                          ),
+                          child: const Icon(Icons.home_rounded,
+                              color: Colors.white, size: 20),
+                        ),
+                        Container(
+                            width: 3,
+                            height: 15,
+                            color: const Color(0xFF1565C0)),
+                      ]),
+                    ),
+                    // Technician animated marker
+                    Marker(
+                      point: techPoint,
+                      width: 50,
+                      height: 65,
+                      child: AnimatedBuilder(
+                        animation: _pulseAnim,
+                        builder: (_, __) => Column(children: [
+                          Transform.scale(
+                            scale: _pulseAnim.value,
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF57C00),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: Colors.white, width: 2.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: const Color(0xFFF57C00)
+                                          .withValues(alpha: 0.5),
+                                      blurRadius: 12,
+                                      spreadRadius: 2)
+                                ],
+                              ),
+                              child: const Icon(
+                                  Icons.directions_car_rounded,
+                                  color: Colors.white,
+                                  size: 20),
+                            ),
+                          ),
+                          Container(
+                              width: 3,
+                              height: 15,
+                              color: const Color(0xFFF57C00)),
+                        ]),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // ── Footer legend ────────────────────────────────────────────────
+          Container(
+            color: const Color(0xFF1A1D2E),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _LegendDot(color: Color(0xFFF57C00),
+                    label: 'Technician'),
+                SizedBox(width: 20),
+                _LegendDot(color: Color(0xFF1565C0),
+                    label: 'Your Address'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _LegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+            width: 10,
+            height: 10,
+            decoration:
+                BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(label,
+            style:
+                const TextStyle(color: Colors.white54, fontSize: 12)),
+      ],
     );
   }
 }

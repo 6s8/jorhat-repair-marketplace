@@ -23,9 +23,13 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
   late final TextEditingController _houseController;
   late final TextEditingController _landmarkController;
   late final TextEditingController _areaController;
-  late final TextEditingController _cityController;
-  late final TextEditingController _stateController;
   late final TextEditingController _pinController;
+  String _selectedCity = 'Jorhat';
+
+  static const List<String> _assamCities = [
+    'Guwahati', 'Jorhat', 'Dibrugarh', 'Silchar', 'Tezpur',
+    'Tinsukia', 'Nagaon', 'Sivasagar', 'Bongaigaon', 'Goalpara',
+  ];
 
   @override
   void initState() {
@@ -36,9 +40,10 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
     _houseController = TextEditingController(text: state.house);
     _landmarkController = TextEditingController(text: state.landmark);
     _areaController = TextEditingController(text: state.area);
-    _cityController = TextEditingController(text: state.city);
-    _stateController = TextEditingController(text: state.state);
+    _selectedCity = state.city.isNotEmpty ? state.city : 'Jorhat';
     _pinController = TextEditingController(text: state.pincode);
+    // Pre-fill Assam and selected city into booking state
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onFieldChanged());
   }
 
   @override
@@ -48,8 +53,6 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
     _houseController.dispose();
     _landmarkController.dispose();
     _areaController.dispose();
-    _cityController.dispose();
-    _stateController.dispose();
     _pinController.dispose();
     super.dispose();
   }
@@ -61,8 +64,8 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
           house: _houseController.text,
           landmark: _landmarkController.text,
           area: _areaController.text,
-          city: _cityController.text,
-          stateName: _stateController.text,
+          city: _selectedCity,
+          stateName: 'Assam',
           pincode: _pinController.text,
         );
   }
@@ -207,27 +210,44 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
           ),
           const SizedBox(height: 14),
 
-          // City & State
+          // City dropdown (Assam cities) & locked State
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _cityController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: 'City',
-                    border: OutlineInputBorder(),
+                child: DropdownButtonFormField<String>(
+                  initialValue: _selectedCity,
+                  decoration: InputDecoration(
+                    labelText: 'City *',
+                    prefixIcon: const Icon(Icons.location_city),
+                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   ),
+                  items: _assamCities
+                      .map((city) => DropdownMenuItem(
+                            value: city,
+                            child: Text(city),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedCity = val);
+                      _onFieldChanged();
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _stateController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
+              const Expanded(
+                child: InputDecorator(
+                  decoration: InputDecoration(
                     labelText: 'State',
                     border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.map_outlined),
+                  ),
+                  child: Text(
+                    'Assam',
+                    style: TextStyle(fontSize: 15),
                   ),
                 ),
               ),

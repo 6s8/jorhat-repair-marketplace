@@ -13,6 +13,8 @@ class TrackedJobState {
   final String? technicianId;
   final DateTime? acceptedAt;
   final DateTime? completedAt;
+  final double? customerLat;
+  final double? customerLng;
   final bool isLoading;
   final String? errorMessage;
 
@@ -22,6 +24,8 @@ class TrackedJobState {
     this.technicianId,
     this.acceptedAt,
     this.completedAt,
+    this.customerLat,
+    this.customerLng,
     this.isLoading = true,
     this.errorMessage,
   });
@@ -31,6 +35,8 @@ class TrackedJobState {
     String? technicianId,
     DateTime? acceptedAt,
     DateTime? completedAt,
+    double? customerLat,
+    double? customerLng,
     bool? isLoading,
     String? errorMessage,
   }) {
@@ -40,6 +46,8 @@ class TrackedJobState {
       technicianId: technicianId ?? this.technicianId,
       acceptedAt: acceptedAt ?? this.acceptedAt,
       completedAt: completedAt ?? this.completedAt,
+      customerLat: customerLat ?? this.customerLat,
+      customerLng: customerLng ?? this.customerLng,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
     );
@@ -65,12 +73,14 @@ class TrackedJobState {
     final rawStatus = json['status']?.toString();
     final status = _parseStatus(rawStatus, techId);
 
-    // Live DB has no accepted_at / completed_at — use updated_at as the
-    // event timestamp when status is beyond pending.
     DateTime? eventTime;
     if (json['updated_at'] != null) {
       eventTime = DateTime.tryParse(json['updated_at'].toString())?.toLocal();
     }
+
+    // Parse customer location from live DB columns
+    final lat = (json['location_lat'] as num?)?.toDouble();
+    final lng = (json['location_lng'] as num?)?.toDouble();
 
     return TrackedJobState(
       jobId: jobId,
@@ -81,6 +91,8 @@ class TrackedJobState {
           ? eventTime
           : null,
       completedAt: status == TrackedJobStatus.completed ? eventTime : null,
+      customerLat: lat,
+      customerLng: lng,
       isLoading: false,
     );
   }
