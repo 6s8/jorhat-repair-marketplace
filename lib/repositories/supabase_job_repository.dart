@@ -217,7 +217,7 @@ class SupabaseJobRepository implements JobRepository {
           .from('jobs')
           .select()
           .eq('technician_id', technicianId)
-          .eq('status', 'accepted')
+          .inFilter('status', ['accepted', 'on_the_way'])
           .order('updated_at', ascending: false);
 
       return (data as List)
@@ -238,5 +238,34 @@ class SupabaseJobRepository implements JobRepository {
         })
         .eq('id', jobId)
         .timeout(const Duration(seconds: 8));
+  }
+
+  @override
+  Future<Result<Job>> updateJobStatus(
+      String jobId, String technicianId, String newStatus) async {
+    try {
+      final response = await _client
+          .from('jobs')
+          .update({
+            'status': newStatus,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', jobId)
+          .eq('technician_id', technicianId)
+          .select()
+          .timeout(const Duration(seconds: 8));
+
+      if (response.isNotEmpty) {
+        return Result.success(Job.fromJson(response.first));
+      }
+      return Result.unknownError(
+          'Could not update job status to "$newStatus".');
+    } on TimeoutException {
+      return Result.timeout('Network timeout. Please try again.');
+    } on PostgrestException catch (e) {
+      return Result.unknownError('Database error: ${e.message}');
+    } catch (e) {
+      return Result.unknownError('Error: ${e.toString()}');
+    }
   }
 }

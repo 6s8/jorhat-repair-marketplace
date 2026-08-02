@@ -49,6 +49,7 @@ class TrackedJobState {
     switch (raw) {
       case 'accepted':
         return TrackedJobStatus.assigned;
+      case 'on_the_way':
       case 'in_progress':
         return TrackedJobStatus.inProgress;
       case 'completed':

@@ -24,4 +24,7 @@ abstract class JobRepository {
 
   /// Update the price of an active job (e.g. when spare parts are added).
   Future<void> updateJobPrice(String jobId, double newPrice);
+
+  /// Transition a job to a new status (e.g. 'on_the_way', 'completed').
+  Future<Result<Job>> updateJobStatus(String jobId, String technicianId, String newStatus);
 }
