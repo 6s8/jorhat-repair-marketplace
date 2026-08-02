@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../providers/job_repository_provider.dart';
@@ -121,6 +123,35 @@ class BookingController extends StateNotifier<BookingState> {
         longitude: 94.2037,
         area: state.area.isEmpty ? 'Jorhat Town' : state.area,
       );
+    }
+  }
+
+  /// Update location from map picker and attempt reverse geocoding
+  Future<void> updateLocationFromMap(double lat, double lng) async {
+    // Optimistically update coordinates
+    state = state.copyWith(latitude: lat, longitude: lng);
+
+    try {
+      final uri = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lng');
+      final response = await http.get(uri, headers: {
+        'User-Agent': 'com.jorhat.repair_marketplace',
+      });
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final address = data['address'] as Map<String, dynamic>?;
+        if (address != null) {
+          final area = address['suburb'] ?? address['neighbourhood'] ?? address['road'] ?? address['village'] ?? state.area;
+          final pin = address['postcode'] ?? state.pincode;
+          
+          state = state.copyWith(
+            area: area,
+            pincode: pin,
+          );
+        }
+      }
+    } catch (e) {
+      // Silently fail reverse geocoding, coordinates are already saved
     }
   }
 

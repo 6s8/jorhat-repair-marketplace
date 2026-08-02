@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import '../../controller/booking_controller.dart';
+import 'map_picker_sheet.dart';
 
 /// Step 3: Customer Contact & Location Address Page.
 class CustomerAddressPage extends ConsumerStatefulWidget {
@@ -95,18 +97,42 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
           ),
           const SizedBox(height: 20),
 
-          // Pick Current Location Button
+          // Pick Location on Map Button
           OutlinedButton.icon(
             onPressed: state.isFetchingLocation
                 ? null
                 : () async {
-                    await controller.getCurrentLocation();
-                    if (state.area.isNotEmpty) {
-                      _areaController.text = state.area;
+                    // Set default center to Jorhat or current selected location
+                    final currentCenter = LatLng(
+                      state.latitude ?? 26.7509,
+                      state.longitude ?? 94.2037,
+                    );
+                    
+                    final result = await MapPickerSheet.show(context, currentCenter);
+                    
+                    if (result != null) {
+                      // Show loading state while reverse geocoding
+                      controller.updateLocationFromMap(result.latitude, result.longitude).then((_) {
+                        // After reverse geocoding completes, sync local controllers
+                        if (mounted) {
+                          setState(() {
+                            final newState = ref.read(bookingControllerProvider);
+                            if (newState.area.isNotEmpty) _areaController.text = newState.area;
+                            if (newState.pincode.isNotEmpty) _pinController.text = newState.pincode;
+                            if (newState.city.isNotEmpty && _assamCities.contains(newState.city)) {
+                              _selectedCity = newState.city;
+                            }
+                          });
+                        }
+                      });
                     }
                   },
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48),
+              minimumSize: const Size(double.infinity, 54),
+              backgroundColor: state.latitude != null ? const Color(0xFF1565C0).withValues(alpha: 0.1) : null,
+              side: BorderSide(
+                color: state.latitude != null ? const Color(0xFF1565C0) : Colors.grey[400]!,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -117,12 +143,18 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.my_location, color: Color(0xFF0F52BA)),
+                : Icon(
+                    state.latitude != null ? Icons.check_circle : Icons.map_rounded,
+                    color: state.latitude != null ? const Color(0xFF1565C0) : const Color(0xFF0F52BA),
+                  ),
             label: Text(
               state.latitude != null
-                  ? 'Location Picked (${state.latitude!.toStringAsFixed(4)}, ${state.longitude!.toStringAsFixed(4)})'
-                  : 'Pick Current Location',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+                  ? 'Pin Dropped: ${state.latitude!.toStringAsFixed(4)}° N, ${state.longitude!.toStringAsFixed(4)}° E'
+                  : 'Pick Location on Map',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: state.latitude != null ? const Color(0xFF1565C0) : const Color(0xFF0F52BA),
+              ),
             ),
           ),
           const SizedBox(height: 20),
