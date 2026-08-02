@@ -90,6 +90,8 @@ class JobCard extends ConsumerWidget {
                               technicianId: currentTechnicianId,
                             );
 
+                        if (!context.mounted) return;
+
                         result.when(
                           success: (acceptedJob) {
                             onAcceptSuccess?.call();

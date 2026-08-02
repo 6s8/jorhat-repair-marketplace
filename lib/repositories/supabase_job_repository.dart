@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../features/booking/models/job_create_request.dart';
 import '../models/job_model.dart';
 import '../models/result.dart';
 import 'job_repository.dart';
@@ -8,7 +9,8 @@ import 'job_repository.dart';
 /// Supabase implementation of [JobRepository].
 ///
 /// Enforces atomic database updates to prevent race conditions when multiple
-/// technicians attempt to accept the same job simultaneously.
+/// technicians attempt to accept the same job simultaneously, and provides
+/// customer job creation methods.
 class SupabaseJobRepository implements JobRepository {
   final SupabaseClient _client;
 
@@ -36,17 +38,14 @@ class SupabaseJobRepository implements JobRepository {
 
   @override
   Stream<List<Job>> watchPendingJobs() {
-    // Controller to emit updated list of active pending jobs
     final controller = StreamController<List<Job>>.broadcast();
     List<Job> currentJobs = [];
 
-    // Helper to fetch and push initial state
     fetchPendingJobs().then((jobs) {
       currentJobs = jobs;
       if (!controller.isClosed) controller.add(currentJobs);
     });
 
-    // Realtime postgres changes channel listener
     final channel = _client.channel('public:jobs');
 
     channel.onPostgresChanges(
@@ -101,7 +100,6 @@ class SupabaseJobRepository implements JobRepository {
   @override
   Future<Result<Job>> acceptJob(String jobId, String technicianId) async {
     try {
-      // 1. Primary Atomic Attempt: Try stored procedure RPC
       try {
         final rpcResult = await _client.rpc(
           'accept_job',
@@ -116,10 +114,9 @@ class SupabaseJobRepository implements JobRepository {
           return Result.success(acceptedJob);
         }
       } catch (_) {
-        // Fall back to direct atomic SQL query if RPC is not registered
+        // Fall back to direct atomic query if RPC is not registered
       }
 
-      // 2. Fallback Atomic Query: Single UPDATE with status & technician_id guards
       final response = await _client
           .from('jobs')
           .update({
@@ -138,7 +135,6 @@ class SupabaseJobRepository implements JobRepository {
         return Result.success(acceptedJob);
       }
 
-      // Zero rows returned -> Job was already accepted by another technician or expired
       return Result.jobAlreadyTaken(
         'This job has already been accepted by another technician.',
       );
@@ -153,6 +149,31 @@ class SupabaseJobRepository implements JobRepository {
       return Result.unknownError(e.message);
     } catch (e) {
       return Result.unknownError('Failed to accept job: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<Result<Job>> createJob(JobCreateRequest request) async {
+    try {
+      final payload = request.toJson();
+      final response = await _client
+          .from('jobs')
+          .insert(payload)
+          .select()
+          .timeout(const Duration(seconds: 10));
+
+      if (response.isNotEmpty) {
+        final createdJob = Job.fromJson((response as List).first as Map<String, dynamic>);
+        return Result.success(createdJob);
+      }
+
+      return Result.unknownError('Failed to insert repair job.');
+    } on TimeoutException {
+      return Result.timeout('Network timeout while creating job. Please try again.');
+    } on SocketException {
+      return Result.networkError('Connection lost. Please check your internet connection.');
+    } catch (e) {
+      return Result.unknownError('Error creating job: ${e.toString()}');
     }
   }
 }

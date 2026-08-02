@@ -1,3 +1,4 @@
+import '../features/booking/models/job_create_request.dart';
 import '../models/job_model.dart';
 import '../models/result.dart';
 
@@ -10,7 +11,8 @@ abstract class JobRepository {
   Stream<List<Job>> watchPendingJobs();
 
   /// Atomically accept a job to prevent race conditions.
-  ///
-  /// Guarantees that only ONE technician wins the job.
   Future<Result<Job>> acceptJob(String jobId, String technicianId);
+
+  /// Create a new customer repair request job in Supabase.
+  Future<Result<Job>> createJob(JobCreateRequest request);
 }

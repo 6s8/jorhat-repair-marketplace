@@ -1,0 +1,215 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '../../../core/supabase/supabase_providers.dart';
+import '../../../providers/job_repository_provider.dart';
+import '../models/job_create_request.dart';
+import '../pricing/repair_pricing.dart';
+import '../state/booking_state.dart';
+
+/// Riverpod Controller managing customer repair booking flow state and actions.
+class BookingController extends StateNotifier<BookingState> {
+  final Ref _ref;
+
+  BookingController(this._ref) : super(const BookingState());
+
+  void selectCategory(String category) {
+    final price = RepairPricing.getPrice(category);
+    state = state.copyWith(
+      selectedCategory: category,
+      estimatedPrice: price,
+      errorMessage: null,
+    );
+  }
+
+  void updateIssue(String issue) {
+    state = state.copyWith(
+      issueDescription: issue,
+      errorMessage: null,
+    );
+  }
+
+  void updateAddressFields({
+    String? customerName,
+    String? customerPhone,
+    String? house,
+    String? landmark,
+    String? area,
+    String? city,
+    String? stateName,
+    String? pincode,
+  }) {
+    final name = customerName ?? state.customerName;
+    final phone = customerPhone ?? state.customerPhone;
+    final h = house ?? state.house;
+    final lm = landmark ?? state.landmark;
+    final a = area ?? state.area;
+    final c = city ?? state.city;
+    final st = stateName ?? state.state;
+    final pin = pincode ?? state.pincode;
+
+    final formatted = '$h, ${lm.isNotEmpty ? "$lm, " : ""}$a, $c, $st - $pin';
+
+    state = state.copyWith(
+      customerName: name,
+      customerPhone: phone,
+      house: h,
+      landmark: lm,
+      area: a,
+      city: c,
+      state: st,
+      pincode: pin,
+      formattedAddress: formatted,
+      errorMessage: null,
+    );
+  }
+
+  /// Capture current device location coordinates via Geolocator
+  Future<void> getCurrentLocation() async {
+    state = state.copyWith(isFetchingLocation: true, errorMessage: null);
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        state = state.copyWith(
+          isFetchingLocation: false,
+          latitude: 26.7509,
+          longitude: 94.2037,
+          area: state.area.isEmpty ? 'Jorhat Town' : state.area,
+        );
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          state = state.copyWith(
+            isFetchingLocation: false,
+            latitude: 26.7509,
+            longitude: 94.2037,
+            area: state.area.isEmpty ? 'Jorhat Town' : state.area,
+          );
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        state = state.copyWith(
+          isFetchingLocation: false,
+          latitude: 26.7509,
+          longitude: 94.2037,
+          area: state.area.isEmpty ? 'Jorhat Town' : state.area,
+        );
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+
+      state = state.copyWith(
+        isFetchingLocation: false,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        area: state.area.isEmpty ? 'Jorhat Central' : state.area,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isFetchingLocation: false,
+        latitude: 26.7509,
+        longitude: 94.2037,
+        area: state.area.isEmpty ? 'Jorhat Town' : state.area,
+      );
+    }
+  }
+
+  void setStep(int step) {
+    state = state.copyWith(currentStep: step, errorMessage: null);
+  }
+
+  void nextStep() {
+    if (state.currentStep < 2) {
+      state = state.copyWith(currentStep: state.currentStep + 1, errorMessage: null);
+    }
+  }
+
+  void previousStep() {
+    if (state.currentStep > 0) {
+      state = state.copyWith(currentStep: state.currentStep - 1, errorMessage: null);
+    }
+  }
+
+  /// Submit repair booking request to Supabase
+  Future<bool> submitBooking() async {
+    if (!state.canSubmit) {
+      state = state.copyWith(errorMessage: 'Please fill all required fields correctly.');
+      return false;
+    }
+
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    final supabase = _ref.read(supabaseClientProvider);
+    final user = supabase.auth.currentUser;
+    final customerId = user?.id ?? 'cust-jorhat-${DateTime.now().millisecondsSinceEpoch}';
+
+    final request = JobCreateRequest(
+      customerId: customerId,
+      category: state.selectedCategory!,
+      issueDescription: state.issueDescription.trim(),
+      estimatedPrice: state.estimatedPrice ?? 399.0,
+      customerName: state.customerName.trim(),
+      customerPhone: state.customerPhone.trim(),
+      house: state.house.trim(),
+      landmark: state.landmark.trim(),
+      area: state.area.trim(),
+      city: state.city,
+      state: state.state,
+      pincode: state.pincode.trim(),
+      formattedAddress: state.formattedAddress,
+      latitude: state.latitude ?? 26.7509,
+      longitude: state.longitude ?? 94.2037,
+      status: 'pending',
+    );
+
+    final repository = _ref.read(jobRepositoryProvider);
+    final result = await repository.createJob(request);
+
+    return result.when(
+      success: (createdJob) {
+        state = state.copyWith(
+          isLoading: false,
+          createdJob: createdJob,
+          currentStep: 3, // Step 3 -> Success Page
+        );
+        return true;
+      },
+      jobAlreadyTaken: (msg) {
+        state = state.copyWith(isLoading: false, errorMessage: msg);
+        return false;
+      },
+      networkError: (msg) {
+        state = state.copyWith(isLoading: false, errorMessage: msg);
+        return false;
+      },
+      timeout: (msg) {
+        state = state.copyWith(isLoading: false, errorMessage: msg);
+        return false;
+      },
+      unknownError: (msg) {
+        state = state.copyWith(isLoading: false, errorMessage: msg);
+        return false;
+      },
+    );
+  }
+
+  void reset() {
+    state = const BookingState();
+  }
+}
+
+/// Riverpod Provider for [BookingController]
+final bookingControllerProvider =
+    StateNotifierProvider<BookingController, BookingState>((ref) {
+  return BookingController(ref);
+});

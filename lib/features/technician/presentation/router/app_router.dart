@@ -1,7 +1,7 @@
 import 'package:go_router/go_router.dart';
 import '../../../../models/job_model.dart';
+import '../../../main_navigation/presentation/main_navigation_screen.dart';
 import '../screens/job_detail_screen.dart';
-import '../screens/job_feed_screen.dart';
 
 /// App router configuration using GoRouter.
 final appRouter = GoRouter(
@@ -9,7 +9,7 @@ final appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const JobFeedScreen(),
+      builder: (context, state) => const MainNavigationScreen(),
     ),
     GoRoute(
       path: '/job-detail',
