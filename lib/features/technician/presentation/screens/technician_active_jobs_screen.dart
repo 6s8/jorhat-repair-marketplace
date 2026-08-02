@@ -197,6 +197,47 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
     }
   }
 
+  // ── Call & WhatsApp ─────────────────────────────────────────────────────────
+  Future<void> _callCustomer() async {
+    final phone = widget.job.customerPhone;
+    if (phone == null || phone.isEmpty) {
+      _showError('No phone number provided.');
+      return;
+    }
+    final url = Uri.parse('tel:$phone');
+    try {
+      final launched = await launchUrl(url);
+      if (!launched) _showError('Could not launch dialer.');
+    } catch (e) {
+      _showError('Could not launch dialer.');
+    }
+  }
+
+  Future<void> _openWhatsApp() async {
+    final phone = widget.job.customerPhone;
+    if (phone == null || phone.isEmpty) {
+      _showError('No phone number provided.');
+      return;
+    }
+    String formattedPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (formattedPhone.length == 10) {
+      formattedPhone = '91$formattedPhone';
+    }
+    final name = widget.job.customerName ?? 'Customer';
+    final cat = widget.job.applianceCategory ?? 'appliance';
+    final text = 'Hello $name, I am your technician for your $cat repair.';
+    final url = Uri.parse('https://wa.me/$formattedPhone?text=${Uri.encodeComponent(text)}');
+    try {
+      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        final fallbackLaunched = await launchUrl(url);
+        if (!fallbackLaunched) _showError('Could not launch WhatsApp.');
+      }
+    } catch (e) {
+      _showError('Could not launch WhatsApp.');
+    }
+  }
+
   // ── Spare parts ─────────────────────────────────────────────────────────────
   Future<void> _applySpareParts() async {
     final parts = double.tryParse(_sparePartsController.text.trim()) ?? 0.0;
@@ -492,6 +533,38 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
                 ],
 
                 const SizedBox(height: 16),
+                
+                // ── Call & WhatsApp buttons ───────────────────────────────────
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _callCustomer,
+                        icon: const Icon(Icons.phone, size: 18, color: Colors.green),
+                        label: const Text('Call', style: TextStyle(color: Colors.green)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.green),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _openWhatsApp,
+                        icon: const Icon(Icons.chat, size: 18, color: Color(0xFF25D366)),
+                        label: const Text('WhatsApp', style: TextStyle(color: Color(0xFF25D366))),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF25D366)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
 
                 // ── Google Maps navigation button ─────────────────────────
                 if (job.latitude != null && job.longitude != null) ...[
