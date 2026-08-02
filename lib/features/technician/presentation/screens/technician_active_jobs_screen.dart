@@ -181,10 +181,19 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
     }
     final url = Uri.parse(
         'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      _showError('Could not open Google Maps.');
+    
+    try {
+      // First try external application (works better on mobile)
+      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        // Fallback to default mode (works on web)
+        final fallbackLaunched = await launchUrl(url);
+        if (!fallbackLaunched) {
+          _showError('Could not open Google Maps.');
+        }
+      }
+    } catch (e) {
+      _showError('Error opening Google Maps.');
     }
   }
 
