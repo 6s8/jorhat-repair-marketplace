@@ -38,6 +38,8 @@ class JobCreateRequest extends Equatable {
     this.status = 'pending',
   });
 
+  /// Convert to JSON payload for Supabase insertion.
+  /// Strictly uses standard database columns only ('area' is removed and combined into issue/address text).
   Map<String, dynamic> toJson() {
     final fullAddress = formattedAddress.isNotEmpty
         ? formattedAddress
@@ -45,10 +47,9 @@ class JobCreateRequest extends Equatable {
 
     return {
       'customer_id': customerId,
-      'issue': '$category Repair: $issueDescription',
+      'issue': '[$category] $issueDescription\nContact: $customerName ($customerPhone)\nAddress: $fullAddress',
       'price': estimatedPrice,
       'distance_km': 2.5, // Default distance estimate in Jorhat town area
-      'formatted_address': fullAddress,
       'latitude': latitude,
       'longitude': longitude,
       'status': status,
