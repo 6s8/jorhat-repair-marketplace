@@ -47,26 +47,26 @@ class Job extends Equatable {
 
   factory Job.fromJson(Map<String, dynamic> json) {
     return Job(
-      id: json['id'] as String,
-      customerId: json['customer_id'] as String,
-      technicianId: json['technician_id'] as String?,
-      issue: json['issue'] as String? ?? 'General Repair Request',
-      status: json['status'] as String? ?? 'pending',
+      id: json['id']?.toString() ?? '',
+      customerId: json['customer_id']?.toString() ?? '',
+      technicianId: json['technician_id']?.toString(),
+      issue: json['issue']?.toString() ?? 'General Repair Request',
+      status: json['status']?.toString() ?? 'pending',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String).toLocal()
+          ? DateTime.tryParse(json['created_at'].toString())?.toLocal() ?? DateTime.now()
           : DateTime.now(),
       expiresAt: json['expires_at'] != null
-          ? DateTime.parse(json['expires_at'] as String).toLocal()
+          ? DateTime.tryParse(json['expires_at'].toString())?.toLocal()
           : null,
       acceptedAt: json['accepted_at'] != null
-          ? DateTime.parse(json['accepted_at'] as String).toLocal()
+          ? DateTime.tryParse(json['accepted_at'].toString())?.toLocal()
           : null,
       completedAt: json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'] as String).toLocal()
+          ? DateTime.tryParse(json['completed_at'].toString())?.toLocal()
           : null,
     );
   }

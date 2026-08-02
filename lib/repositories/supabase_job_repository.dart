@@ -59,18 +59,22 @@ class SupabaseJobRepository implements JobRepository {
         final oldRecord = payload.oldRecord;
 
         if (eventType == PostgresChangeEvent.insert) {
-          final newJob = Job.fromJson(newRecord);
-          if (newJob.status == 'pending' && !newJob.isExpired) {
-            currentJobs.insert(0, newJob);
+          if (newRecord.isNotEmpty) {
+            final newJob = Job.fromJson(newRecord);
+            if (newJob.id.isNotEmpty && newJob.status == 'pending' && !newJob.isExpired) {
+              currentJobs.insert(0, newJob);
+            }
           }
         } else if (eventType == PostgresChangeEvent.update) {
-          final updatedJob = Job.fromJson(newRecord);
-          if (updatedJob.status != 'pending' || updatedJob.isExpired) {
-            currentJobs.removeWhere((job) => job.id == updatedJob.id);
-          } else {
-            final index = currentJobs.indexWhere((job) => job.id == updatedJob.id);
-            if (index != -1) {
-              currentJobs[index] = updatedJob;
+          if (newRecord.isNotEmpty) {
+            final updatedJob = Job.fromJson(newRecord);
+            if (updatedJob.status != 'pending' || updatedJob.isExpired) {
+              currentJobs.removeWhere((job) => job.id == updatedJob.id);
+            } else {
+              final index = currentJobs.indexWhere((job) => job.id == updatedJob.id);
+              if (index != -1) {
+                currentJobs[index] = updatedJob;
+              }
             }
           }
         } else if (eventType == PostgresChangeEvent.delete) {
