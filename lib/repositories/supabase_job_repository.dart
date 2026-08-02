@@ -122,7 +122,7 @@ class SupabaseJobRepository implements JobRepository {
           .update({
             'status': 'accepted',
             'technician_id': technicianId,
-            'accepted_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', jobId)
           .eq('status', 'pending')

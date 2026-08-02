@@ -62,20 +62,24 @@ class TrackedJobState {
   static TrackedJobState fromJson(String jobId, Map<String, dynamic> json) {
     final techId = json['technician_id']?.toString();
     final rawStatus = json['status']?.toString();
+    final status = _parseStatus(rawStatus, techId);
 
-    // Derive a richer status: if technician assigned but still "accepted", show inProgress after 2 min
-    TrackedJobStatus status = _parseStatus(rawStatus, techId);
+    // Live DB has no accepted_at / completed_at — use updated_at as the
+    // event timestamp when status is beyond pending.
+    DateTime? eventTime;
+    if (json['updated_at'] != null) {
+      eventTime = DateTime.tryParse(json['updated_at'].toString())?.toLocal();
+    }
 
     return TrackedJobState(
       jobId: jobId,
       status: status,
       technicianId: techId,
-      acceptedAt: json['accepted_at'] != null
-          ? DateTime.tryParse(json['accepted_at'].toString())?.toLocal()
+      acceptedAt: (status == TrackedJobStatus.assigned ||
+              status == TrackedJobStatus.inProgress)
+          ? eventTime
           : null,
-      completedAt: json['completed_at'] != null
-          ? DateTime.tryParse(json['completed_at'].toString())?.toLocal()
-          : null,
+      completedAt: status == TrackedJobStatus.completed ? eventTime : null,
       isLoading: false,
     );
   }
