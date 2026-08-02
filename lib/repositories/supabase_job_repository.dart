@@ -155,35 +155,17 @@ class SupabaseJobRepository implements JobRepository {
   @override
   Future<Result<Job>> createJob(JobCreateRequest request) async {
     try {
+      // Payload uses ONLY columns that exist in the live jobs table
       final payload = request.toSanitizedJson();
-      List<dynamic> response;
-
-      try {
-        response = await _client
-            .from('jobs')
-            .insert(payload)
-            .select()
-            .timeout(const Duration(seconds: 10));
-      } on PostgrestException catch (_) {
-        // Fallback: Retry with core standard columns if optional columns do not exist in database schema
-        final fallbackPayload = <String, dynamic>{
-          'customer_id': request.customerId,
-          'issue': payload['issue'],
-          'price': request.estimatedPrice,
-          'status': request.status,
-          'latitude': request.latitude,
-          'longitude': request.longitude,
-        };
-
-        response = await _client
-            .from('jobs')
-            .insert(fallbackPayload)
-            .select()
-            .timeout(const Duration(seconds: 10));
-      }
+      final response = await _client
+          .from('jobs')
+          .insert(payload)
+          .select()
+          .timeout(const Duration(seconds: 10));
 
       if (response.isNotEmpty) {
-        final createdJob = Job.fromJson((response).first as Map<String, dynamic>);
+        final Map<String, dynamic> row = response.first;
+        final createdJob = Job.fromJson(row);
         return Result.success(createdJob);
       }
 
@@ -192,6 +174,8 @@ class SupabaseJobRepository implements JobRepository {
       return Result.timeout('Network timeout while creating job. Please try again.');
     } on SocketException {
       return Result.networkError('Connection lost. Please check your internet connection.');
+    } on PostgrestException catch (e) {
+      return Result.unknownError('Database error: ${e.message} (code: ${e.code})');
     } catch (e) {
       return Result.unknownError('Error creating job: ${e.toString()}');
     }

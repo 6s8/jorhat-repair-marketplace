@@ -39,25 +39,29 @@ class JobCreateRequest extends Equatable {
   });
 
   /// Convert to sanitized JSON payload for Supabase insertion.
-  /// STRICTLY contains ONLY standard database schema fields.
-  /// All address details are combined into `address_text`. Individual fields like 'area', 'landmark', 'pincode', 'city', 'state', 'customer_name', 'customer_phone', and 'distance_km' are completely omitted.
+  /// ONLY uses columns that exist in the live jobs table schema:
+  /// customer_id, issue, price, status, distance_km, latitude, longitude, expires_at.
+  /// All address/category/contact details are embedded inside the `issue` text field.
   Map<String, dynamic> toSanitizedJson() {
     final addressText = formattedAddress.isNotEmpty
         ? formattedAddress
         : '$house, ${landmark.isNotEmpty ? "$landmark, " : ""}$area, $city, $state - $pincode';
 
-    final String detailedIssue = '[$category] $issueDescription\nContact: $customerName ($customerPhone)\nAddress: $addressText';
+    // Embed all rich info into the `issue` text (the only free-text field in the DB schema)
+    final String detailedIssue =
+        '[$category] $issueDescription\n'
+        'Contact: $customerName ($customerPhone)\n'
+        'Address: $addressText';
 
     return {
       'customer_id': customerId,
-      'appliance_category': category,
-      'issue_description': issueDescription,
       'issue': detailedIssue,
       'price': estimatedPrice,
       'status': status,
-      'address_text': addressText,
+      'distance_km': 2.5,
       'latitude': latitude,
       'longitude': longitude,
+      'expires_at': DateTime.now().add(const Duration(minutes: 30)).toIso8601String(),
     };
   }
 
