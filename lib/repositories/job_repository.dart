@@ -15,4 +15,10 @@ abstract class JobRepository {
 
   /// Create a new customer repair request job in Supabase.
   Future<Result<Job>> createJob(JobCreateRequest request);
+
+  /// Mark an accepted job as completed.
+  Future<Result<Job>> completeJob(String jobId, String technicianId);
+
+  /// Fetch all active (accepted) jobs for a specific technician.
+  Future<List<Job>> fetchActiveJobsForTechnician(String technicianId);
 }

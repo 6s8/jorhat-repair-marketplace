@@ -180,4 +180,51 @@ class SupabaseJobRepository implements JobRepository {
       return Result.unknownError('Error creating job: ${e.toString()}');
     }
   }
+
+  @override
+  Future<Result<Job>> completeJob(String jobId, String technicianId) async {
+    try {
+      final response = await _client
+          .from('jobs')
+          .update({
+            'status': 'completed',
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', jobId)
+          .eq('technician_id', technicianId)
+          .eq('status', 'accepted')
+          .select()
+          .timeout(const Duration(seconds: 8));
+
+      if (response.isNotEmpty) {
+        final completedJob = Job.fromJson(response.first);
+        return Result.success(completedJob);
+      }
+      return Result.unknownError('Could not mark job as completed.');
+    } on TimeoutException {
+      return Result.timeout('Network timeout. Please try again.');
+    } on PostgrestException catch (e) {
+      return Result.unknownError('Database error: ${e.message}');
+    } catch (e) {
+      return Result.unknownError('Error completing job: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<List<Job>> fetchActiveJobsForTechnician(String technicianId) async {
+    try {
+      final data = await _client
+          .from('jobs')
+          .select()
+          .eq('technician_id', technicianId)
+          .eq('status', 'accepted')
+          .order('updated_at', ascending: false);
+
+      return (data as List)
+          .map((json) => Job.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }

@@ -41,25 +41,9 @@ class JobFeedScreen extends ConsumerWidget {
       }
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Nearby Jobs',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.read(realtimeJobListProvider.notifier).refresh();
-            },
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(realtimeJobListProvider.notifier).refresh(),
-        child: asyncJobs.when(
+    return RefreshIndicator(
+      onRefresh: () => ref.read(realtimeJobListProvider.notifier).refresh(),
+      child: asyncJobs.when(
           loading: () => const Center(
             child: CircularProgressIndicator(),
           ),
@@ -116,7 +100,6 @@ class JobFeedScreen extends ConsumerWidget {
             );
           },
         ),
-      ),
-    );
+      );
   }
 }
