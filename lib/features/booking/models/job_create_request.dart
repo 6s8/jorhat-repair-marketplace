@@ -39,20 +39,16 @@ class JobCreateRequest extends Equatable {
   });
 
   Map<String, dynamic> toJson() {
+    final fullAddress = formattedAddress.isNotEmpty
+        ? formattedAddress
+        : '$house, ${landmark.isNotEmpty ? "$landmark, " : ""}$area, $city, $state - $pincode';
+
     return {
       'customer_id': customerId,
       'issue': '$category Repair: $issueDescription',
       'price': estimatedPrice,
       'distance_km': 2.5, // Default distance estimate in Jorhat town area
-      'customer_name': customerName,
-      'customer_phone': customerPhone,
-      'house': house,
-      'landmark': landmark,
-      'area': area,
-      'city': city,
-      'state': state,
-      'pincode': pincode,
-      'formatted_address': formattedAddress,
+      'formatted_address': fullAddress,
       'latitude': latitude,
       'longitude': longitude,
       'status': status,
