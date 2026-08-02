@@ -39,13 +39,14 @@ class JobCreateRequest extends Equatable {
   });
 
   /// Convert to sanitized JSON payload for Supabase insertion.
-  /// Removes all extra/computed keys ('distance_km', 'area', etc.).
+  /// Only contains valid database schema keys:
+  /// 'appliance_category', 'issue_description', 'issue', 'price', 'status', 'address_text', 'customer_id', 'latitude', 'longitude'.
   Map<String, dynamic> toSanitizedJson() {
-    final fullAddress = formattedAddress.isNotEmpty
+    final addressText = formattedAddress.isNotEmpty
         ? formattedAddress
         : '$house, ${landmark.isNotEmpty ? "$landmark, " : ""}$area, $city, $state - $pincode';
 
-    final String detailedIssue = '[$category] $issueDescription\nContact: $customerName ($customerPhone)\nAddress: $fullAddress';
+    final String detailedIssue = '[$category] $issueDescription\nContact: $customerName ($customerPhone)\nAddress: $addressText';
 
     return {
       'customer_id': customerId,
@@ -54,7 +55,7 @@ class JobCreateRequest extends Equatable {
       'issue': detailedIssue,
       'price': estimatedPrice,
       'status': status,
-      'address_text': fullAddress,
+      'address_text': addressText,
       'latitude': latitude,
       'longitude': longitude,
     };
