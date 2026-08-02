@@ -53,15 +53,18 @@ class JobCreateRequest extends Equatable {
         'Contact: $customerName ($customerPhone)\n'
         'Address: $addressText';
 
-    return {
+    final Map<String, dynamic> payload = {
       'customer_id': customerId,
       'issue': detailedIssue,
       'price': estimatedPrice,
       'status': status,
-      'distance_km': 2.5,
-      'latitude': latitude,
-      'longitude': longitude,
     };
+
+    // Only add nullable columns if they have actual values
+    if (latitude != null) payload['latitude'] = latitude;
+    if (longitude != null) payload['longitude'] = longitude;
+
+    return payload;
   }
 
   Map<String, dynamic> toJson() => toSanitizedJson();
