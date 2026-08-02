@@ -46,14 +46,23 @@ class Job extends Equatable {
   }
 
   factory Job.fromJson(Map<String, dynamic> json) {
+    // Derive issue string from issue, issue_description, or appliance_category
+    String derivedIssue = json['issue']?.toString() ?? '';
+    if (derivedIssue.isEmpty) {
+      final category = json['appliance_category']?.toString() ?? 'General Repair';
+      final description = json['issue_description']?.toString() ?? '';
+      final address = json['address_text']?.toString() ?? json['formatted_address']?.toString() ?? '';
+      derivedIssue = '[$category] $description${address.isNotEmpty ? "\nAddress: $address" : ""}';
+    }
+
     return Job(
       id: json['id']?.toString() ?? '',
       customerId: json['customer_id']?.toString() ?? '',
       technicianId: json['technician_id']?.toString(),
-      issue: json['issue']?.toString() ?? 'General Repair Request',
+      issue: derivedIssue.isNotEmpty ? derivedIssue : 'General Repair Request',
       status: json['status']?.toString() ?? 'pending',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
+      distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 2.5,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       createdAt: json['created_at'] != null

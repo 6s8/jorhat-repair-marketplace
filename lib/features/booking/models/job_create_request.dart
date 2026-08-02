@@ -38,24 +38,29 @@ class JobCreateRequest extends Equatable {
     this.status = 'pending',
   });
 
-  /// Convert to JSON payload for Supabase insertion.
-  /// Strictly uses standard database columns only ('area' is removed and combined into issue/address text).
-  Map<String, dynamic> toJson() {
+  /// Convert to sanitized JSON payload for Supabase insertion.
+  /// Removes all extra/computed keys ('distance_km', 'area', etc.).
+  Map<String, dynamic> toSanitizedJson() {
     final fullAddress = formattedAddress.isNotEmpty
         ? formattedAddress
         : '$house, ${landmark.isNotEmpty ? "$landmark, " : ""}$area, $city, $state - $pincode';
 
+    final String detailedIssue = '[$category] $issueDescription\nContact: $customerName ($customerPhone)\nAddress: $fullAddress';
+
     return {
       'customer_id': customerId,
-      'issue': '[$category] $issueDescription\nContact: $customerName ($customerPhone)\nAddress: $fullAddress',
+      'appliance_category': category,
+      'issue_description': issueDescription,
+      'issue': detailedIssue,
       'price': estimatedPrice,
-      'distance_km': 2.5, // Default distance estimate in Jorhat town area
+      'status': status,
+      'address_text': fullAddress,
       'latitude': latitude,
       'longitude': longitude,
-      'status': status,
-      'expires_at': DateTime.now().add(const Duration(minutes: 30)).toIso8601String(),
     };
   }
+
+  Map<String, dynamic> toJson() => toSanitizedJson();
 
   @override
   List<Object?> get props => [
