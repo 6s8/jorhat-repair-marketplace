@@ -1,13 +1,13 @@
-/// Configuration placeholder for Supabase URL and Anon Key.
-/// Update these values with your Supabase project credentials for Jorhat Repair Marketplace.
+/// Configuration for Supabase URL and Anon / Publishable Key.
+/// Configured for Jorhat Repair & Spare Parts Marketplace backend.
 class SupabaseConfig {
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://your-supabase-project-id.supabase.co',
+    defaultValue: 'https://yuhnbffprqxiaxncfkma.supabase.co',
   );
 
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'YOUR_SUPABASE_ANON_KEY_HERE',
+    defaultValue: 'sb_publishable_I0jImnU0x-Sydh8n3X2UmQ_IlKLj7VI',
   );
 }
