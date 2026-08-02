@@ -39,7 +39,8 @@ class JobCreateRequest extends Equatable {
   });
 
   /// Convert to sanitized JSON payload for Supabase insertion.
-  /// Formats all customer address components into `address_text` and includes standard schema fields.
+  /// STRICTLY contains ONLY standard database schema fields.
+  /// All address details are combined into `address_text`. Individual fields like 'area', 'landmark', 'pincode', 'city', 'state', 'customer_name', 'customer_phone', and 'distance_km' are completely omitted.
   Map<String, dynamic> toSanitizedJson() {
     final addressText = formattedAddress.isNotEmpty
         ? formattedAddress
@@ -49,14 +50,12 @@ class JobCreateRequest extends Equatable {
 
     return {
       'customer_id': customerId,
-      'customer_name': customerName,
-      'customer_phone': customerPhone,
-      'address_text': addressText,
       'appliance_category': category,
       'issue_description': issueDescription,
       'issue': detailedIssue,
       'price': estimatedPrice,
       'status': status,
+      'address_text': addressText,
       'latitude': latitude,
       'longitude': longitude,
     };
