@@ -38,31 +38,34 @@ class JobCreateRequest extends Equatable {
     this.status = 'pending',
   });
 
-  /// Convert to sanitized JSON payload for Supabase insertion.
-  /// ONLY uses columns that exist in the live jobs table schema:
-  /// customer_id, issue, price, status, distance_km, latitude, longitude, expires_at.
-  /// All address/category/contact details are embedded inside the `issue` text field.
+  /// Converts to a JSON payload matching the ACTUAL live Supabase jobs table schema.
+  /// Columns confirmed via REST API query on the live project:
+  ///   appliance_category, issue_description, price, status, address_text,
+  ///   location_lat, location_lng, updated_at, customer_name, customer_phone, customer_id.
   Map<String, dynamic> toSanitizedJson() {
     final addressText = formattedAddress.isNotEmpty
         ? formattedAddress
         : '$house, ${landmark.isNotEmpty ? "$landmark, " : ""}$area, $city, $state - $pincode';
 
-    // Embed all rich info into the `issue` text (the only free-text field in the DB schema)
-    final String detailedIssue =
-        '[$category] $issueDescription\n'
-        'Contact: $customerName ($customerPhone)\n'
-        'Address: $addressText';
+    final now = DateTime.now().toUtc().toIso8601String();
 
     final Map<String, dynamic> payload = {
-      'customer_id': customerId,
-      'issue': detailedIssue,
+      'appliance_category': category,
+      'issue_description': issueDescription,
       'price': estimatedPrice,
       'status': status,
+      'address_text': addressText,
+      'customer_name': customerName,
+      'customer_phone': customerPhone,
+      'updated_at': now,
     };
 
-    // Only add nullable columns if they have actual values
-    if (latitude != null) payload['latitude'] = latitude;
-    if (longitude != null) payload['longitude'] = longitude;
+    // customer_id is nullable in live table — only send if present
+    if (customerId.isNotEmpty) payload['customer_id'] = customerId;
+
+    // Live table uses location_lat / location_lng (NOT latitude / longitude)
+    if (latitude != null) payload['location_lat'] = latitude;
+    if (longitude != null) payload['location_lng'] = longitude;
 
     return payload;
   }
