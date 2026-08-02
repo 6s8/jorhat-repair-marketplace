@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../models/job_model.dart';
 import '../../../../providers/accept_job_controller.dart';
+import '../../../booking/pricing/pricing_breakdown.dart';
 import 'countdown_timer.dart';
 import 'distance_badge.dart';
-import 'price_tag.dart';
 
 /// Material 3 Job Card component for Technician Dispatch System.
 class JobCard extends ConsumerWidget {
@@ -41,27 +41,40 @@ class JobCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Top Row: Distance Badge (Left) & Price Tag (Right)
+            // Top Row: Distance (left) + Pricing chips (right)
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DistanceBadge(distanceKm: job.distanceKm),
-                PriceTag(price: job.price),
+                const Spacer(),
+                _PricingChips(price: job.price),
               ],
             ),
             const SizedBox(height: 14),
 
-            // Issue Title (Max 2 lines, 18 bold)
+            // Issue Title
             Text(
-              job.issue,
+              job.displayTitle,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontSize: 18,
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
                     height: 1.3,
                   ),
             ),
+            if (job.displayIssue.isNotEmpty && job.displayIssue != job.displayTitle)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  job.displayIssue,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             const SizedBox(height: 14),
 
             // Countdown Timer Section
@@ -155,6 +168,72 @@ class JobCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Pricing chips shown on the technician feed card ─────────────────────────
+class _PricingChips extends StatelessWidget {
+  final double price;
+  const _PricingChips({required this.price});
+
+  @override
+  Widget build(BuildContext context) {
+    final breakdown = PricingBreakdown(baseServiceCharge: price);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Customer total
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.person_rounded,
+                  size: 12,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer),
+              const SizedBox(width: 4),
+              Text(
+                breakdown.customerTotalStr,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Technician payout
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.account_balance_wallet_rounded,
+                  size: 12, color: Colors.green),
+              const SizedBox(width: 4),
+              Text(
+                'You: ${breakdown.technicianPayoutStr}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

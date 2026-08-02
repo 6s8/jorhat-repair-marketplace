@@ -21,4 +21,7 @@ abstract class JobRepository {
 
   /// Fetch all active (accepted) jobs for a specific technician.
   Future<List<Job>> fetchActiveJobsForTechnician(String technicianId);
+
+  /// Update the price of an active job (e.g. when spare parts are added).
+  Future<void> updateJobPrice(String jobId, double newPrice);
 }

@@ -227,4 +227,16 @@ class SupabaseJobRepository implements JobRepository {
       return [];
     }
   }
+
+  @override
+  Future<void> updateJobPrice(String jobId, double newPrice) async {
+    await _client
+        .from('jobs')
+        .update({
+          'price': newPrice,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', jobId)
+        .timeout(const Duration(seconds: 8));
+  }
 }
