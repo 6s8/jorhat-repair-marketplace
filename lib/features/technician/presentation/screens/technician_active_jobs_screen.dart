@@ -16,7 +16,7 @@ class TechnicianActiveJobsScreen extends ConsumerWidget {
 
   const TechnicianActiveJobsScreen({
     super.key,
-    this.technicianId = 'tech-jorhat-001',
+    this.technicianId = '00000000-0000-4000-8000-000000000001',
   });
 
   @override

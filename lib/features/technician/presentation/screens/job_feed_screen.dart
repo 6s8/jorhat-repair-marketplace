@@ -13,7 +13,7 @@ class JobFeedScreen extends ConsumerWidget {
 
   const JobFeedScreen({
     super.key,
-    this.currentTechnicianId = 'tech-jorhat-001',
+    this.currentTechnicianId = '00000000-0000-4000-8000-000000000001',
   });
 
   @override
