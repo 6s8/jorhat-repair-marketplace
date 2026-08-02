@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../controller/booking_controller.dart';
 
 /// Step 4: Booking Confirmation Success Page.
@@ -23,7 +24,7 @@ class BookingSuccessPage extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Success Icon Animation container
+            // Success Icon Animation
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -130,18 +131,48 @@ class BookingSuccessPage extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
-            // Back Home Button
+            // ── Live Tracking Button ──────────────────
+            if (job != null)
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    context.push('/track-job', extra: {
+                      'jobId': job.id,
+                      'category': state.selectedCategory,
+                      'customerName': state.customerName,
+                    });
+                  },
+                  icon: const Icon(Icons.track_changes_rounded),
+                  label: const Text(
+                    'View Live Status',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF1565C0),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 12),
+
+            // ── Book Another Repair ───────────────────
             SizedBox(
               width: double.infinity,
               height: 52,
-              child: FilledButton(
+              child: OutlinedButton(
                 onPressed: () {
                   ref.read(bookingControllerProvider.notifier).reset();
                   onBackHome();
                 },
-                style: FilledButton.styleFrom(
+                style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
