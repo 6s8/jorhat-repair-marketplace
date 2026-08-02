@@ -151,7 +151,18 @@ class BookingController extends StateNotifier<BookingState> {
 
     final supabase = _ref.read(supabaseClientProvider);
     final user = supabase.auth.currentUser;
-    final customerId = user?.id ?? 'cust-jorhat-${DateTime.now().millisecondsSinceEpoch}';
+
+    // customer_id must be a valid UUID — use auth user id if available,
+    // otherwise generate a deterministic guest UUID (all-zeroes namespace + timestamp hash)
+    String customerId;
+    if (user != null) {
+      customerId = user.id;
+    } else {
+      // Generate a v4-style UUID from current timestamp so it passes UUID validation
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final hex = ts.toRadixString(16).padLeft(12, '0');
+      customerId = '00000000-0000-4000-8000-${hex.substring(0, 12)}';
+    }
 
     final request = JobCreateRequest(
       customerId: customerId,
