@@ -61,7 +61,6 @@ class JobCreateRequest extends Equatable {
       'distance_km': 2.5,
       'latitude': latitude,
       'longitude': longitude,
-      'expires_at': DateTime.now().add(const Duration(minutes: 30)).toIso8601String(),
     };
   }
 
