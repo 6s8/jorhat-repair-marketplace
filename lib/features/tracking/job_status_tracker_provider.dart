@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/supabase/supabase_providers.dart';
 
 /// Represents the simplified tracked status of a job for the customer-facing tracker.
-enum TrackedJobStatus { requested, assigned, inProgress, completed, unknown }
+enum TrackedJobStatus { requested, assigned, onTheWay, inProgress, completed, unknown }
 
 /// State for a tracked job
 class TrackedJobState {
@@ -15,6 +15,10 @@ class TrackedJobState {
   final DateTime? completedAt;
   final double? customerLat;
   final double? customerLng;
+  final double? techLat;
+  final double? techLng;
+  final String? arrivalOtp;
+  final String? completionOtp;
   final bool isLoading;
   final String? errorMessage;
 
@@ -26,6 +30,10 @@ class TrackedJobState {
     this.completedAt,
     this.customerLat,
     this.customerLng,
+    this.techLat,
+    this.techLng,
+    this.arrivalOtp,
+    this.completionOtp,
     this.isLoading = true,
     this.errorMessage,
   });
@@ -37,6 +45,10 @@ class TrackedJobState {
     DateTime? completedAt,
     double? customerLat,
     double? customerLng,
+    double? techLat,
+    double? techLng,
+    String? arrivalOtp,
+    String? completionOtp,
     bool? isLoading,
     String? errorMessage,
   }) {
@@ -48,6 +60,10 @@ class TrackedJobState {
       completedAt: completedAt ?? this.completedAt,
       customerLat: customerLat ?? this.customerLat,
       customerLng: customerLng ?? this.customerLng,
+      techLat: techLat ?? this.techLat,
+      techLng: techLng ?? this.techLng,
+      arrivalOtp: arrivalOtp ?? this.arrivalOtp,
+      completionOtp: completionOtp ?? this.completionOtp,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
     );
@@ -58,6 +74,7 @@ class TrackedJobState {
       case 'accepted':
         return TrackedJobStatus.assigned;
       case 'on_the_way':
+        return TrackedJobStatus.onTheWay;
       case 'in_progress':
         return TrackedJobStatus.inProgress;
       case 'completed':
@@ -87,12 +104,15 @@ class TrackedJobState {
       status: status,
       technicianId: techId,
       acceptedAt: (status == TrackedJobStatus.assigned ||
+              status == TrackedJobStatus.onTheWay ||
               status == TrackedJobStatus.inProgress)
           ? eventTime
           : null,
       completedAt: status == TrackedJobStatus.completed ? eventTime : null,
       customerLat: lat,
       customerLng: lng,
+      arrivalOtp: json['arrival_otp']?.toString(),
+      completionOtp: json['completion_otp']?.toString(),
       isLoading: false,
     );
   }

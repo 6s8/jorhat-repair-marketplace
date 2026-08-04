@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_progress_indicator.dart';
 import 'job_status_tracker_provider.dart';
 
-/// Real-time Customer Order Tracking Screen.
-/// Shows a vertical animated stepper that reflects live Supabase job status changes.
+/// Real-time Customer Order Tracking Screen for Fixly.
 class JobStatusTrackerScreen extends ConsumerWidget {
   final String jobId;
   final String? applianceCategory;
@@ -23,23 +24,16 @@ class JobStatusTrackerScreen extends ConsumerWidget {
     final trackerState = ref.watch(jobStatusTrackerProvider(jobId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1117),
       body: CustomScrollView(
         slivers: [
-          // Gradient AppBar
           SliverAppBar(
             expandedHeight: 160,
             pinned: true,
-            backgroundColor: const Color(0xFF0F1117),
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF1A237E), Color(0xFF0D47A1), Color(0xFF1565C0)],
-                  ),
-                ),
+                color: AppColors.primary,
                 child: SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -55,7 +49,7 @@ class JobStatusTrackerScreen extends ConsumerWidget {
                                 color: Colors.white.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.track_changes_rounded, color: Colors.white, size: 24),
+                              child: const Icon(Icons.track_changes_rounded, color: AppColors.accent, size: 24),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -73,8 +67,8 @@ class JobStatusTrackerScreen extends ConsumerWidget {
                                   if (applianceCategory != null)
                                     Text(
                                       applianceCategory!,
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.8),
+                                      style: const TextStyle(
+                                        color: Colors.white70,
                                         fontSize: 13,
                                       ),
                                     ),
@@ -100,21 +94,13 @@ class JobStatusTrackerScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // Booking ID Card
                   _BookingIdCard(jobId: jobId, customerName: customerName),
                   const SizedBox(height: 20),
 
-                  // Status Stepper
                   if (trackerState.isLoading)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Column(
-                        children: [
-                          CircularProgressIndicator(color: Color(0xFF1565C0)),
-                          SizedBox(height: 16),
-                          Text('Connecting to live feed...', style: TextStyle(color: Colors.white70)),
-                        ],
-                      ),
+                      child: AppProgressIndicator(label: 'Connecting to live feed...'),
                     )
                   else if (trackerState.errorMessage != null)
                     _ErrorCard(message: trackerState.errorMessage!)
@@ -123,26 +109,34 @@ class JobStatusTrackerScreen extends ConsumerWidget {
 
                   const SizedBox(height: 24),
 
-                  // Live map — only shown when technician is on_the_way
+                  if (!trackerState.isLoading && trackerState.errorMessage == null)
+                    _buildOtpCard(trackerState),
+
+                  const SizedBox(height: 24),
+
                   if (!trackerState.isLoading &&
-                      trackerState.status == TrackedJobStatus.inProgress &&
+                      (trackerState.status == TrackedJobStatus.assigned ||
+                          trackerState.status == TrackedJobStatus.onTheWay ||
+                          trackerState.status == TrackedJobStatus.inProgress) &&
                       trackerState.customerLat != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 24),
                       child: _LiveTrackingMap(
                         customerLat: trackerState.customerLat!,
                         customerLng: trackerState.customerLng!,
+                        techLat: trackerState.techLat,
+                        techLng: trackerState.techLng,
+                        isArrived: trackerState.status == TrackedJobStatus.inProgress ||
+                            trackerState.status == TrackedJobStatus.completed,
                       ),
                     ),
 
-                  // Live indicator
                   if (!trackerState.isLoading && trackerState.errorMessage == null)
                     _LiveIndicator(status: trackerState.status),
 
                   const SizedBox(height: 32),
 
-                  // Help Section
-                  _HelpCard(),
+                  const _HelpCard(),
                 ],
               ),
             ),
@@ -151,11 +145,27 @@ class JobStatusTrackerScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildOtpCard(TrackedJobState state) {
+    if (state.status == TrackedJobStatus.assigned || state.status == TrackedJobStatus.onTheWay) {
+      return _OtpCard(
+        title: 'Arrival Verification OTP',
+        otp: state.arrivalOtp,
+        description: 'Share this code with your technician upon arrival.',
+        accentColor: AppColors.primary,
+      );
+    } else if (state.status == TrackedJobStatus.inProgress) {
+      return _OtpCard(
+        title: 'Completion Verification OTP',
+        otp: state.completionOtp,
+        description: 'Share this code only after the repair work is completed.',
+        accentColor: AppColors.success,
+      );
+    }
+    return const SizedBox.shrink();
+  }
 }
 
-// ─────────────────────────────────────────────
-// Booking ID Card
-// ─────────────────────────────────────────────
 class _BookingIdCard extends StatelessWidget {
   final String jobId;
   final String? customerName;
@@ -164,51 +174,46 @@ class _BookingIdCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1D2E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2A2D3E)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1565C0).withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF42A5F5), size: 22),
-          ),
-          const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Booking ID', style: TextStyle(color: Colors.white54, fontSize: 12)),
-              Text(
-                jobId.length > 8 ? jobId.substring(0, 8).toUpperCase() : jobId.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-              if (customerName != null && customerName!.isNotEmpty)
-                Text(customerName!, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-            ],
-          ),
-        ],
+              child: const Icon(Icons.receipt_long_rounded, color: AppColors.primary, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Booking ID', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                Text(
+                  jobId.length > 8 ? jobId.substring(0, 8).toUpperCase() : jobId.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                    color: AppColors.primary,
+                  ),
+                ),
+                if (customerName != null && customerName!.isNotEmpty)
+                  Text(customerName!, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────
-// Vertical Status Stepper
-// ─────────────────────────────────────────────
 class _StatusStepper extends StatelessWidget {
   final TrackedJobState state;
 
@@ -216,6 +221,9 @@ class _StatusStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasArrived = state.status == TrackedJobStatus.inProgress ||
+        state.status == TrackedJobStatus.completed;
+
     final steps = [
       const _StepData(
         icon: Icons.send_rounded,
@@ -229,11 +237,15 @@ class _StatusStepper extends StatelessWidget {
         subtitle: 'A technician has accepted your request',
         status: TrackedJobStatus.assigned,
       ),
-      const _StepData(
-        icon: Icons.directions_bike_rounded,
-        label: 'On the Way',
-        subtitle: 'Technician is heading to your location',
-        status: TrackedJobStatus.inProgress,
+      _StepData(
+        icon: hasArrived
+            ? Icons.home_work_rounded
+            : Icons.directions_bike_rounded,
+        label: hasArrived ? 'Technician Arrived' : 'On the Way',
+        subtitle: hasArrived
+            ? 'Technician reached your location & verified arrival OTP'
+            : 'Technician is heading to your location',
+        status: TrackedJobStatus.onTheWay,
       ),
       const _StepData(
         icon: Icons.verified_rounded,
@@ -245,31 +257,30 @@ class _StatusStepper extends StatelessWidget {
 
     final currentIndex = _stepIndexFor(state.status);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1D2E),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF2A2D3E)),
-      ),
-      child: Column(
-        children: List.generate(steps.length, (i) {
-          final step = steps[i];
-          final isDone = i < currentIndex;
-          final isActive = i == currentIndex;
-          final isPending = i > currentIndex;
-          final isLast = i == steps.length - 1;
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: List.generate(steps.length, (i) {
+            final step = steps[i];
+            final isDone = i < currentIndex;
+            final isActive = i == currentIndex;
+            final isPending = i > currentIndex;
+            final isLast = i == steps.length - 1;
 
-          return _StepRow(
-            step: step,
-            isDone: isDone,
-            isActive: isActive,
-            isPending: isPending,
-            isLast: isLast,
-            acceptedAt: (i == 1 && state.acceptedAt != null) ? state.acceptedAt : null,
-            completedAt: (i == 3 && state.completedAt != null) ? state.completedAt : null,
-          );
-        }),
+            return _StepRow(
+              step: step,
+              isDone: isDone,
+              isActive: isActive,
+              isPending: isPending,
+              isLast: isLast,
+              acceptedAt: (i == 1 && state.acceptedAt != null) ? state.acceptedAt : null,
+              completedAt: (i == 3 && state.completedAt != null) ? state.completedAt : null,
+            );
+          }),
+        ),
       ),
     );
   }
@@ -280,6 +291,8 @@ class _StatusStepper extends StatelessWidget {
         return 0;
       case TrackedJobStatus.assigned:
         return 1;
+      case TrackedJobStatus.onTheWay:
+        return 2;
       case TrackedJobStatus.inProgress:
         return 2;
       case TrackedJobStatus.completed:
@@ -326,17 +339,16 @@ class _StepRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color nodeColor = isDone
-        ? const Color(0xFF43A047)
+        ? AppColors.success
         : isActive
-            ? const Color(0xFF1565C0)
-            : const Color(0xFF2A2D3E);
+            ? AppColors.primary
+            : Colors.grey.shade300;
 
-    final Color lineColor = isDone ? const Color(0xFF43A047) : const Color(0xFF2A2D3E);
+    final Color lineColor = isDone ? AppColors.success : Colors.grey.shade300;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left: circle + vertical line
         SizedBox(
           width: 40,
           child: Column(
@@ -349,12 +361,12 @@ class _StepRow extends StatelessWidget {
                   color: nodeColor,
                   shape: BoxShape.circle,
                   boxShadow: isActive
-                    ? [BoxShadow(color: const Color(0xFF1565C0).withValues(alpha: 0.5), blurRadius: 12, spreadRadius: 2)]
-                    : null,
+                      ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10)]
+                      : null,
                 ),
                 child: isDone
                     ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
-                    : Icon(step.icon, color: isActive ? Colors.white : Colors.white30, size: 20),
+                    : Icon(step.icon, color: isActive ? Colors.white : Colors.grey.shade600, size: 20),
               ),
               if (!isLast)
                 AnimatedContainer(
@@ -368,7 +380,6 @@ class _StepRow extends StatelessWidget {
         ),
         const SizedBox(width: 14),
 
-        // Right: text
         Expanded(
           child: Padding(
             padding: EdgeInsets.only(bottom: isLast ? 0 : 52 + 8, top: 8),
@@ -378,16 +389,16 @@ class _StepRow extends StatelessWidget {
                 Text(
                   step.label,
                   style: TextStyle(
-                    color: isPending ? Colors.white38 : Colors.white,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
                     fontSize: 15,
+                    color: isPending ? AppColors.textMuted : AppColors.text,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   step.subtitle,
-                  style: TextStyle(
-                    color: isPending ? Colors.white24 : Colors.white54,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
                     fontSize: 12,
                   ),
                 ),
@@ -396,7 +407,7 @@ class _StepRow extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       _formatTime(acceptedAt!),
-                      style: const TextStyle(color: Color(0xFF42A5F5), fontSize: 11),
+                      style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
                 if (completedAt != null)
@@ -404,7 +415,7 @@ class _StepRow extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       _formatTime(completedAt!),
-                      style: const TextStyle(color: Color(0xFF66BB6A), fontSize: 11),
+                      style: const TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
               ],
@@ -422,9 +433,6 @@ class _StepRow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// Live Indicator
-// ─────────────────────────────────────────────
 class _LiveIndicator extends StatefulWidget {
   final TrackedJobStatus status;
   const _LiveIndicator({required this.status});
@@ -455,16 +463,16 @@ class _LiveIndicatorState extends State<_LiveIndicator> with SingleTickerProvide
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF1B5E20).withValues(alpha: 0.3),
+          color: AppColors.success.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: const Color(0xFF43A047).withValues(alpha: 0.5)),
+          border: Border.all(color: AppColors.success),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.verified_rounded, color: Color(0xFF66BB6A), size: 16),
+            Icon(Icons.verified_rounded, color: AppColors.success, size: 16),
             SizedBox(width: 8),
-            Text('Job Completed', style: TextStyle(color: Color(0xFF66BB6A), fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('Job Completed', style: TextStyle(color: AppColors.success, fontSize: 13, fontWeight: FontWeight.bold)),
           ],
         ),
       );
@@ -475,16 +483,16 @@ class _LiveIndicatorState extends State<_LiveIndicator> with SingleTickerProvide
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF0D47A1).withValues(alpha: 0.3),
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: const Color(0xFF1565C0).withValues(alpha: 0.5)),
+          border: Border.all(color: AppColors.primary),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.circle, color: Color(0xFF42A5F5), size: 8),
+            Icon(Icons.circle, color: AppColors.accent, size: 8),
             SizedBox(width: 8),
-            Text('Tracking Live', style: TextStyle(color: Color(0xFF42A5F5), fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('Tracking Live Feed', style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -492,9 +500,6 @@ class _LiveIndicatorState extends State<_LiveIndicator> with SingleTickerProvide
   }
 }
 
-// ─────────────────────────────────────────────
-// Error Card
-// ─────────────────────────────────────────────
 class _ErrorCard extends StatelessWidget {
   final String message;
   const _ErrorCard({required this.message});
@@ -504,73 +509,73 @@ class _ErrorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF3E0808),
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+        border: Border.all(color: AppColors.error),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline_rounded, color: Colors.redAccent),
+          const Icon(Icons.error_outline_rounded, color: AppColors.error),
           const SizedBox(width: 12),
-          Expanded(child: Text(message, style: const TextStyle(color: Colors.redAccent))),
+          Expanded(child: Text(message, style: const TextStyle(color: AppColors.error))),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────
-// Help Card
-// ─────────────────────────────────────────────
 class _HelpCard extends StatelessWidget {
+  const _HelpCard();
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1D2E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2A2D3E)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.support_agent_rounded, color: AppColors.text, size: 22),
             ),
-            child: const Icon(Icons.support_agent_rounded, color: Colors.orange, size: 22),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Need Help?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                SizedBox(height: 2),
-                Text('Call Jorhat Support: 1800-XXX-XXXX', style: TextStyle(color: Colors.white54, fontSize: 12)),
-              ],
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Need Help?', style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 2),
+                  Text('Call Fixly Support: +91 94351 00000', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                ],
+              ),
             ),
-          ),
-          Icon(Icons.call_rounded, color: Colors.orange.withValues(alpha: 0.8)),
-        ],
+            const Icon(Icons.call_rounded, color: AppColors.primary),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Live Tracking Map — shown when technician is on_the_way
-// Shows the customer's pinned location + an animated "technician moving" dot.
-// ─────────────────────────────────────────────────────────────────────────────
 class _LiveTrackingMap extends StatefulWidget {
   final double customerLat;
   final double customerLng;
+  final double? techLat;
+  final double? techLng;
+  final bool isArrived;
 
   const _LiveTrackingMap({
     required this.customerLat,
     required this.customerLng,
+    this.techLat,
+    this.techLng,
+    this.isArrived = false,
   });
 
   @override
@@ -604,43 +609,38 @@ class _LiveTrackingMapState extends State<_LiveTrackingMap>
     final customerPoint =
         LatLng(widget.customerLat, widget.customerLng);
 
-    // Simulate technician ~0.8 km north-east of customer
     final techPoint = LatLng(
-      widget.customerLat + 0.007,
-      widget.customerLng + 0.007,
+      widget.techLat ?? (widget.customerLat + 0.007),
+      widget.techLng ?? (widget.customerLng + 0.007),
     );
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: const Color(0xFF1565C0).withValues(alpha: 0.5)),
-        boxShadow: [
-          BoxShadow(
-              color: const Color(0xFF1565C0).withValues(alpha: 0.15),
-              blurRadius: 20,
-              spreadRadius: 2),
-        ],
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──────────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                  colors: [Color(0xFFE65100), Color(0xFFF57C00)]),
-            ),
+            color: AppColors.primary,
             child: Row(
               children: [
-                const Icon(Icons.directions_car_rounded,
-                    color: Colors.white, size: 18),
+                Icon(
+                  widget.isArrived
+                      ? Icons.home_work_rounded
+                      : Icons.directions_car_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
-                const Text(
-                  'Technician is on the way',
-                  style: TextStyle(
+                Text(
+                  widget.isArrived
+                      ? 'Technician has arrived'
+                      : 'Technician is on the way',
+                  style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 14),
@@ -654,7 +654,7 @@ class _LiveTrackingMapState extends State<_LiveTrackingMap>
                       width: 8,
                       height: 8,
                       decoration: const BoxDecoration(
-                          color: Colors.white, shape: BoxShape.circle),
+                          color: AppColors.accent, shape: BoxShape.circle),
                     ),
                   ),
                 ),
@@ -668,7 +668,6 @@ class _LiveTrackingMapState extends State<_LiveTrackingMap>
             ),
           ),
 
-          // ── Map ─────────────────────────────────────────────────────────
           SizedBox(
             height: 220,
             child: FlutterMap(
@@ -686,42 +685,33 @@ class _LiveTrackingMapState extends State<_LiveTrackingMap>
                 TileLayer(
                   urlTemplate:
                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName:
-                      'com.jorhat.repair_marketplace',
+                  userAgentPackageName: 'com.fixly.app',
                 ),
-                // Route line (simplified straight line)
                 PolylineLayer(
                   polylines: [
                     Polyline(
                       points: [techPoint, customerPoint],
                       strokeWidth: 3.5,
-                      color: const Color(0xFF1565C0),
+                      color: AppColors.primary,
                       pattern: StrokePattern.dashed(segments: const [8, 6]),
                     ),
                   ],
                 ),
                 MarkerLayer(
                   markers: [
-                    // Customer home pin
                     Marker(
                       point: customerPoint,
                       width: 50,
                       height: 65,
                       child: Column(children: [
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1565C0),
+                            color: AppColors.primary,
                             shape: BoxShape.circle,
                             border:
                                 Border.all(color: Colors.white, width: 2.5),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: const Color(0xFF1565C0)
-                                      .withValues(alpha: 0.4),
-                                  blurRadius: 8)
-                            ],
                           ),
                           child: const Icon(Icons.home_rounded,
                               color: Colors.white, size: 20),
@@ -729,10 +719,9 @@ class _LiveTrackingMapState extends State<_LiveTrackingMap>
                         Container(
                             width: 3,
                             height: 15,
-                            color: const Color(0xFF1565C0)),
+                            color: AppColors.primary),
                       ]),
                     ),
-                    // Technician animated marker
                     Marker(
                       point: techPoint,
                       width: 50,
@@ -743,53 +732,29 @@ class _LiveTrackingMapState extends State<_LiveTrackingMap>
                           Transform.scale(
                             scale: _pulseAnim.value,
                             child: Container(
-                              width: 40,
-                              height: 40,
+                              width: 36,
+                              height: 36,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF57C00),
+                                color: AppColors.accent,
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                     color: Colors.white, width: 2.5),
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: const Color(0xFFF57C00)
-                                          .withValues(alpha: 0.5),
-                                      blurRadius: 12,
-                                      spreadRadius: 2)
-                                ],
                               ),
                               child: const Icon(
                                   Icons.directions_car_rounded,
-                                  color: Colors.white,
+                                  color: AppColors.text,
                                   size: 20),
                             ),
                           ),
                           Container(
                               width: 3,
                               height: 15,
-                              color: const Color(0xFFF57C00)),
+                              color: AppColors.accent),
                         ]),
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          // ── Footer legend ────────────────────────────────────────────────
-          Container(
-            color: const Color(0xFF1A1D2E),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _LegendDot(color: Color(0xFFF57C00),
-                    label: 'Technician'),
-                SizedBox(width: 20),
-                _LegendDot(color: Color(0xFF1565C0),
-                    label: 'Your Address'),
               ],
             ),
           ),
@@ -799,26 +764,62 @@ class _LiveTrackingMapState extends State<_LiveTrackingMap>
   }
 }
 
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _LegendDot({required this.color, required this.label});
+class _OtpCard extends StatelessWidget {
+  final String title;
+  final String? otp;
+  final String description;
+  final Color accentColor;
+
+  const _OtpCard({
+    required this.title,
+    required this.otp,
+    required this.description,
+    required this.accentColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-            width: 10,
-            height: 10,
-            decoration:
-                BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 6),
-        Text(label,
-            style:
-                const TextStyle(color: Colors.white54, fontSize: 12)),
-      ],
+    if (otp == null || otp!.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accentColor, width: 2),
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: accentColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            otp!,
+            style: TextStyle(
+              color: accentColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 36,
+              letterSpacing: 4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

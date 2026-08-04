@@ -9,6 +9,8 @@ class Job extends Equatable {
 
   // Live DB rich columns
   final String? applianceCategory;
+  final String? applianceBrand;
+  final String? applianceModel;
   final String? issueDescription;
   final String? customerName;
   final String? customerPhone;
@@ -20,6 +22,13 @@ class Job extends Equatable {
   final double distanceKm;
   final double? latitude;
   final double? longitude;
+  final Map<String, dynamic>? sparePartsUsed;
+  final String? arrivalOtp;
+  final String? completionOtp;
+  final List<String>? imageUrls;
+  final double? finalAmount;
+  final double? rating;
+  final String? reviewComment;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -33,6 +42,8 @@ class Job extends Equatable {
     required this.customerId,
     this.technicianId,
     this.applianceCategory,
+    this.applianceBrand,
+    this.applianceModel,
     this.issueDescription,
     this.customerName,
     this.customerPhone,
@@ -43,12 +54,51 @@ class Job extends Equatable {
     this.distanceKm = 0.0,
     this.latitude,
     this.longitude,
+    this.sparePartsUsed,
+    this.arrivalOtp,
+    this.completionOtp,
+    this.imageUrls,
+    this.finalAmount,
+    this.rating,
+    this.reviewComment,
     required this.createdAt,
     this.updatedAt,
     this.expiresAt,
     this.acceptedAt,
     this.completedAt,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        customerId,
+        technicianId,
+        applianceCategory,
+        applianceBrand,
+        applianceModel,
+        issueDescription,
+        customerName,
+        customerPhone,
+        addressText,
+        issue,
+        status,
+        price,
+        distanceKm,
+        latitude,
+        longitude,
+        sparePartsUsed,
+        arrivalOtp,
+        completionOtp,
+        imageUrls,
+        finalAmount,
+        rating,
+        reviewComment,
+        createdAt,
+        updatedAt,
+        expiresAt,
+        acceptedAt,
+        completedAt,
+      ];
 
   /// Check if job countdown has expired
   bool get isExpired {
@@ -63,10 +113,27 @@ class Job extends Equatable {
     return diff.isNegative ? Duration.zero : diff;
   }
 
+  /// Display brand or 'Not specified' fallback
+  String get displayBrand {
+    if (applianceBrand != null && applianceBrand!.trim().isNotEmpty) {
+      return applianceBrand!.trim();
+    }
+    return 'Not specified';
+  }
+
+  /// Display model or 'Not specified' fallback
+  String get displayModel {
+    if (applianceModel != null && applianceModel!.trim().isNotEmpty) {
+      return applianceModel!.trim();
+    }
+    return 'Not specified';
+  }
+
   /// Human-readable display title derived from rich columns or issue text
   String get displayTitle {
     if (applianceCategory != null && applianceCategory!.isNotEmpty) {
-      return applianceCategory!;
+      final brandPart = displayBrand != 'Not specified' ? ' • $displayBrand' : '';
+      return '${applianceCategory!}$brandPart';
     }
     final lines = issue.split('\n');
     return lines.first.replaceAll(RegExp(r'^\[.*?\]\s*'), '').trim();
@@ -108,12 +175,16 @@ class Job extends Equatable {
     // Derive combined issue string for legacy display
     String derivedIssue = json['issue']?.toString() ?? '';
     final category = json['appliance_category']?.toString() ?? '';
+    final brand = json['appliance_brand']?.toString();
+    final model = json['appliance_model']?.toString();
     final description = json['issue_description']?.toString() ?? '';
     final address = json['address_text']?.toString() ?? '';
 
     if (derivedIssue.isEmpty) {
       final parts = <String>[];
       if (category.isNotEmpty) parts.add('[$category]');
+      if (brand != null && brand.isNotEmpty) parts.add('Brand: $brand');
+      if (model != null && model.isNotEmpty) parts.add('Model: $model');
       if (description.isNotEmpty) parts.add(description);
       if (address.isNotEmpty) parts.add('\nAddress: $address');
       derivedIssue = parts.join(' ');
@@ -124,6 +195,8 @@ class Job extends Equatable {
       customerId: json['customer_id']?.toString() ?? '',
       technicianId: json['technician_id']?.toString(),
       applianceCategory: category.isNotEmpty ? category : null,
+      applianceBrand: brand != null && brand.trim().isNotEmpty ? brand.trim() : null,
+      applianceModel: model != null && model.trim().isNotEmpty ? model.trim() : null,
       issueDescription: description.isNotEmpty ? description : null,
       customerName: json['customer_name']?.toString(),
       customerPhone: json['customer_phone']?.toString(),
@@ -136,6 +209,17 @@ class Job extends Equatable {
           (json['location_lat'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble() ??
           (json['location_lng'] as num?)?.toDouble(),
+      sparePartsUsed: json['spare_parts_used'] is Map
+          ? Map<String, dynamic>.from(json['spare_parts_used'] as Map)
+          : null,
+      arrivalOtp: json['arrival_otp']?.toString(),
+      completionOtp: json['completion_otp']?.toString(),
+      imageUrls: json['image_urls'] is List
+          ? (json['image_urls'] as List).map((e) => e.toString()).toList()
+          : null,
+      finalAmount: (json['final_amount'] as num?)?.toDouble(),
+      rating: (json['rating'] as num?)?.toDouble(),
+      reviewComment: json['review_comment']?.toString(),
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())?.toLocal() ?? DateTime.now()
           : DateTime.now(),
@@ -160,6 +244,8 @@ class Job extends Equatable {
       'customer_id': customerId,
       'technician_id': technicianId,
       'appliance_category': applianceCategory,
+      'appliance_brand': applianceBrand,
+      'appliance_model': applianceModel,
       'issue_description': issueDescription,
       'customer_name': customerName,
       'customer_phone': customerPhone,
@@ -169,6 +255,13 @@ class Job extends Equatable {
       'price': price,
       'latitude': latitude,
       'longitude': longitude,
+      'spare_parts_used': sparePartsUsed,
+      'arrival_otp': arrivalOtp,
+      'completion_otp': completionOtp,
+      'image_urls': imageUrls,
+      'final_amount': finalAmount,
+      'rating': rating,
+      'review_comment': reviewComment,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -179,6 +272,8 @@ class Job extends Equatable {
     String? customerId,
     String? technicianId,
     String? applianceCategory,
+    String? applianceBrand,
+    String? applianceModel,
     String? issueDescription,
     String? customerName,
     String? customerPhone,
@@ -189,6 +284,13 @@ class Job extends Equatable {
     double? distanceKm,
     double? latitude,
     double? longitude,
+    Map<String, dynamic>? sparePartsUsed,
+    String? arrivalOtp,
+    String? completionOtp,
+    List<String>? imageUrls,
+    double? finalAmount,
+    double? rating,
+    String? reviewComment,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? expiresAt,
@@ -200,6 +302,8 @@ class Job extends Equatable {
       customerId: customerId ?? this.customerId,
       technicianId: technicianId ?? this.technicianId,
       applianceCategory: applianceCategory ?? this.applianceCategory,
+      applianceBrand: applianceBrand ?? this.applianceBrand,
+      applianceModel: applianceModel ?? this.applianceModel,
       issueDescription: issueDescription ?? this.issueDescription,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,
@@ -210,6 +314,13 @@ class Job extends Equatable {
       distanceKm: distanceKm ?? this.distanceKm,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      sparePartsUsed: sparePartsUsed ?? this.sparePartsUsed,
+      arrivalOtp: arrivalOtp ?? this.arrivalOtp,
+      completionOtp: completionOtp ?? this.completionOtp,
+      imageUrls: imageUrls ?? this.imageUrls,
+      finalAmount: finalAmount ?? this.finalAmount,
+      rating: rating ?? this.rating,
+      reviewComment: reviewComment ?? this.reviewComment,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       expiresAt: expiresAt ?? this.expiresAt,
@@ -217,24 +328,4 @@ class Job extends Equatable {
       completedAt: completedAt ?? this.completedAt,
     );
   }
-
-  @override
-  List<Object?> get props => [
-        id,
-        customerId,
-        technicianId,
-        applianceCategory,
-        issueDescription,
-        customerName,
-        customerPhone,
-        addressText,
-        issue,
-        status,
-        price,
-        distanceKm,
-        latitude,
-        longitude,
-        createdAt,
-        updatedAt,
-      ];
 }

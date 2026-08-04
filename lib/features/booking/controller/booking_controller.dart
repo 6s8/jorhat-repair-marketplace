@@ -15,18 +15,53 @@ class BookingController extends StateNotifier<BookingState> {
 
   BookingController(this._ref) : super(const BookingState());
 
-  void selectCategory(String category) {
-    final price = RepairPricing.getPrice(category);
+  void selectCategory(String category, {int? inspectionFee}) {
+    final fee = inspectionFee ?? 299;
     state = state.copyWith(
       selectedCategory: category,
-      estimatedPrice: price,
+      baseInspectionFee: fee,
+      estimatedPrice: fee.toDouble(),
       errorMessage: null,
     );
   }
 
-  void updateIssue(String issue) {
+  void selectBrand(String brand) {
     state = state.copyWith(
-      issueDescription: issue,
+      applianceBrand: brand,
+      errorMessage: null,
+    );
+  }
+
+  void setCustomBrand(String text) {
+    state = state.copyWith(
+      customBrand: text,
+      errorMessage: null,
+    );
+  }
+
+  void setModelNumber(String text) {
+    state = state.copyWith(
+      applianceModel: text,
+      errorMessage: null,
+    );
+  }
+
+  void toggleIssueChip(String issue) {
+    final currentChips = List<String>.from(state.selectedIssueChips);
+    if (currentChips.contains(issue)) {
+      currentChips.remove(issue);
+    } else {
+      currentChips.add(issue);
+    }
+    state = state.copyWith(
+      selectedIssueChips: currentChips,
+      errorMessage: null,
+    );
+  }
+
+  void setComplaint(String text) {
+    state = state.copyWith(
+      customComplaint: text,
       errorMessage: null,
     );
   }
@@ -174,7 +209,15 @@ class BookingController extends StateNotifier<BookingState> {
   /// Submit repair booking request to Supabase
   Future<bool> submitBooking() async {
     if (!state.canSubmit) {
-      state = state.copyWith(errorMessage: 'Please fill all required fields correctly.');
+      final List<String> errors = [];
+      if (!state.isCategoryValid) errors.add('Category');
+      if (state.customerName.trim().isEmpty) errors.add('Name');
+      if (!state.isPhoneValid) errors.add('Valid 10-digit Phone');
+      if (state.house.trim().isEmpty) errors.add('House/Flat No');
+      if (state.area.trim().isEmpty) errors.add('Area/Street');
+      if (!state.isPincodeValid) errors.add('Valid 6-digit PIN');
+      
+      state = state.copyWith(errorMessage: 'Please fix: ${errors.join(', ')}');
       return false;
     }
 
@@ -198,6 +241,8 @@ class BookingController extends StateNotifier<BookingState> {
     final request = JobCreateRequest(
       customerId: customerId,
       category: state.selectedCategory!,
+      applianceBrand: state.effectiveBrand,
+      applianceModel: state.applianceModel.trim().isNotEmpty ? state.applianceModel.trim() : null,
       issueDescription: state.issueDescription.trim(),
       estimatedPrice: state.estimatedPrice ?? 399.0,
       customerName: state.customerName.trim(),
@@ -222,7 +267,7 @@ class BookingController extends StateNotifier<BookingState> {
         state = state.copyWith(
           isLoading: false,
           createdJob: createdJob,
-          currentStep: 3, // Step 3 -> Success Page
+          currentStep: 4, // Step 4 -> Success Page
         );
         return true;
       },
@@ -243,6 +288,18 @@ class BookingController extends StateNotifier<BookingState> {
         return false;
       },
     );
+  }
+
+  void goToNextStep() {
+    if (state.currentStep < 4) {
+      state = state.copyWith(currentStep: state.currentStep + 1);
+    }
+  }
+
+  void goToPreviousStep() {
+    if (state.currentStep > 0) {
+      state = state.copyWith(currentStep: state.currentStep - 1);
+    }
   }
 
   void reset() {

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_progress_indicator.dart';
+import '../../../customer/presentation/providers/customer_account_providers.dart';
 import '../../controller/booking_controller.dart';
 import 'map_picker_sheet.dart';
 
-/// Step 3: Customer Contact & Location Address Page.
+/// Step 4: Customer Contact & Location Address Page for Fixly.
 class CustomerAddressPage extends ConsumerStatefulWidget {
   final VoidCallback onSuccess;
   final VoidCallback onBack;
@@ -44,7 +47,6 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
     _areaController = TextEditingController(text: state.area);
     _selectedCity = state.city.isNotEmpty ? state.city : 'Jorhat';
     _pinController = TextEditingController(text: state.pincode);
-    // Pre-fill Assam and selected city into booking state
     WidgetsBinding.instance.addPostFrameCallback((_) => _onFieldChanged());
   }
 
@@ -83,79 +85,194 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
+            'Step 4 of 5 — Address',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary.withValues(alpha: 0.8),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
             'Address & Location',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
                 ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             'Enter your contact details and service address in Jorhat',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                 ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // Pick Location on Map Button
-          OutlinedButton.icon(
-            onPressed: state.isFetchingLocation
-                ? null
-                : () async {
-                    // Set default center to Jorhat or current selected location
-                    final currentCenter = LatLng(
-                      state.latitude ?? 26.7509,
-                      state.longitude ?? 94.2037,
-                    );
-                    
-                    final result = await MapPickerSheet.show(context, currentCenter);
-                    
-                    if (result != null) {
-                      // Show loading state while reverse geocoding
-                      controller.updateLocationFromMap(result.latitude, result.longitude).then((_) {
-                        // After reverse geocoding completes, sync local controllers
-                        if (mounted) {
-                          setState(() {
-                            final newState = ref.read(bookingControllerProvider);
-                            if (newState.area.isNotEmpty) _areaController.text = newState.area;
-                            if (newState.pincode.isNotEmpty) _pinController.text = newState.pincode;
-                            if (newState.city.isNotEmpty && _assamCities.contains(newState.city)) {
-                              _selectedCity = newState.city;
-                            }
-                          });
-                        }
-                      });
-                    }
-                  },
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 54),
-              backgroundColor: state.latitude != null ? const Color(0xFF1565C0).withValues(alpha: 0.1) : null,
-              side: BorderSide(
-                color: state.latitude != null ? const Color(0xFF1565C0) : Colors.grey[400]!,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: state.isFetchingLocation
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(
-                    state.latitude != null ? Icons.check_circle : Icons.map_rounded,
-                    color: state.latitude != null ? const Color(0xFF1565C0) : const Color(0xFF0F52BA),
+          // Saved Addresses Quick Selection
+          Consumer(
+            builder: (context, ref, _) {
+              final savedAddresses = ref.watch(customerAddressesProvider);
+              if (savedAddresses.isEmpty) return const SizedBox.shrink();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Select from Saved Addresses:',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
                   ),
-            label: Text(
-              state.latitude != null
-                  ? 'Pin Dropped: ${state.latitude!.toStringAsFixed(4)}° N, ${state.longitude!.toStringAsFixed(4)}° E'
-                  : 'Pick Location on Map',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: state.latitude != null ? const Color(0xFF1565C0) : const Color(0xFF0F52BA),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 42,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: savedAddresses.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final addr = savedAddresses[index];
+                        return ActionChip(
+                          avatar: Icon(
+                            addr.label == 'Home'
+                                ? Icons.home_rounded
+                                : addr.label == 'Work'
+                                    ? Icons.work_rounded
+                                    : Icons.place_rounded,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                          label: Text(
+                            '${addr.label} (${addr.area})',
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                          ),
+                          backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+                          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.5)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          onPressed: () {
+                            setState(() {
+                              if (addr.name.isNotEmpty) _nameController.text = addr.name;
+                              if (addr.phone.isNotEmpty) _phoneController.text = addr.phone;
+                              _houseController.text = addr.house;
+                              _landmarkController.text = addr.landmark;
+                              _areaController.text = addr.area;
+                              _pinController.text = addr.pincode;
+                              _selectedCity = addr.city;
+                            });
+                            _onFieldChanged();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Selected address: ${addr.label} (${addr.name} - ${addr.phone})'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              );
+            },
+          ),
+
+          // Location Sharing Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: state.isFetchingLocation
+                      ? null
+                      : () async {
+                          await controller.getCurrentLocation();
+                          if (mounted) {
+                            final newState = ref.read(bookingControllerProvider);
+                            setState(() {
+                              if (newState.area.isNotEmpty) _areaController.text = newState.area;
+                              if (newState.pincode.isNotEmpty) _pinController.text = newState.pincode;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  newState.latitude != null
+                                      ? 'GPS Location captured: ${newState.latitude!.toStringAsFixed(4)}° N, ${newState.longitude!.toStringAsFixed(4)}° E'
+                                      : 'Could not acquire GPS signal. Defaulting to Jorhat.',
+                                ),
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: state.isFetchingLocation
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.my_location, size: 18),
+                  label: const Text(
+                    'Use GPS Location',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: state.isFetchingLocation
+                      ? null
+                      : () async {
+                          final currentCenter = LatLng(
+                            state.latitude ?? 26.7509,
+                            state.longitude ?? 94.2037,
+                          );
+                          
+                          final result = await MapPickerSheet.show(context, currentCenter);
+                          
+                          if (result != null) {
+                            controller.updateLocationFromMap(result.latitude, result.longitude).then((_) {
+                              if (mounted) {
+                                setState(() {
+                                  final newState = ref.read(bookingControllerProvider);
+                                  if (newState.area.isNotEmpty) _areaController.text = newState.area;
+                                  if (newState.pincode.isNotEmpty) _pinController.text = newState.pincode;
+                                  if (newState.city.isNotEmpty) {
+                                    _selectedCity = newState.city;
+                                  }
+                                });
+                              }
+                            });
+                          }
+                        },
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.map_rounded, color: AppColors.primary, size: 18),
+                  label: Text(
+                    state.latitude != null
+                        ? 'Pin (${state.latitude!.toStringAsFixed(2)}°)'
+                        : 'Pick on Map',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
 
@@ -165,8 +282,7 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
             onChanged: (_) => _onFieldChanged(),
             decoration: const InputDecoration(
               labelText: 'Customer Name *',
-              prefixIcon: Icon(Icons.person),
-              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.person, color: AppColors.primary),
             ),
           ),
           const SizedBox(height: 14),
@@ -178,8 +294,7 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
             onChanged: (_) => _onFieldChanged(),
             decoration: const InputDecoration(
               labelText: 'Phone Number (10 digits) *',
-              prefixIcon: Icon(Icons.phone),
-              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.phone, color: AppColors.primary),
               counterText: '',
             ),
           ),
@@ -191,8 +306,7 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
             onChanged: (_) => _onFieldChanged(),
             decoration: const InputDecoration(
               labelText: 'House / Flat / Building No. *',
-              prefixIcon: Icon(Icons.home),
-              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.home, color: AppColors.primary),
             ),
           ),
           const SizedBox(height: 14),
@@ -202,8 +316,7 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
             onChanged: (_) => _onFieldChanged(),
             decoration: const InputDecoration(
               labelText: 'Landmark (Optional)',
-              prefixIcon: Icon(Icons.location_city),
-              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.location_city, color: AppColors.primary),
             ),
           ),
           const SizedBox(height: 14),
@@ -218,8 +331,7 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
                   onChanged: (_) => _onFieldChanged(),
                   decoration: const InputDecoration(
                     labelText: 'Area / Street *',
-                    prefixIcon: Icon(Icons.map),
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.map, color: AppColors.primary),
                   ),
                 ),
               ),
@@ -233,7 +345,6 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
                   onChanged: (_) => _onFieldChanged(),
                   decoration: const InputDecoration(
                     labelText: 'PIN *',
-                    border: OutlineInputBorder(),
                     counterText: '',
                   ),
                 ),
@@ -242,20 +353,23 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
           ),
           const SizedBox(height: 14),
 
-          // City dropdown (Assam cities) & locked State
+          // City dropdown & State
           Row(
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  initialValue: _selectedCity,
-                  decoration: InputDecoration(
+                  value: (_selectedCity.isNotEmpty &&
+                          (_assamCities.contains(_selectedCity) ||
+                              !_assamCities.contains(_selectedCity)))
+                      ? _selectedCity
+                      : 'Jorhat',
+                  decoration: const InputDecoration(
                     labelText: 'City *',
-                    prefixIcon: const Icon(Icons.location_city),
-                    border: const OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    prefixIcon: Icon(Icons.location_city, color: AppColors.primary),
                   ),
-                  items: _assamCities
+                  items: (_assamCities.contains(_selectedCity) || _selectedCity.isEmpty
+                          ? _assamCities
+                          : [..._assamCities, _selectedCity])
                       .map((city) => DropdownMenuItem(
                             value: city,
                             child: Text(city),
@@ -274,12 +388,11 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
                 child: InputDecorator(
                   decoration: InputDecoration(
                     labelText: 'State',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.map_outlined),
+                    prefixIcon: Icon(Icons.map_outlined, color: AppColors.primary),
                   ),
                   child: Text(
                     'Assam',
-                    style: TextStyle(fontSize: 15),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -292,18 +405,18 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red[300]!),
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.error),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: Colors.red[700]),
+                  const Icon(Icons.error_outline, color: AppColors.error),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       state.errorMessage!,
-                      style: TextStyle(color: Colors.red[900]),
+                      style: const TextStyle(color: AppColors.error),
                     ),
                   ),
                 ],
@@ -326,9 +439,6 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
                         },
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
                   ),
                   child: const Text('Back'),
                 ),
@@ -336,32 +446,24 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
               const SizedBox(width: 12),
               Expanded(
                 flex: 2,
-                child: FilledButton(
-                  onPressed: state.canSubmit && !state.isLoading
-                      ? () async {
+                child: ElevatedButton(
+                  onPressed: state.isLoading
+                      ? null
+                      : () async {
                           final ok = await controller.submitBooking();
                           if (ok) {
                             widget.onSuccess();
                           }
-                        }
-                      : null,
-                  style: FilledButton.styleFrom(
+                        },
+                  style: ElevatedButton.styleFrom(
                     minimumSize: const Size(0, 52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.text, // High contrast Charcoal text on Marigold
                   ),
                   child: state.isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
+                      ? const AppProgressIndicator(size: 20)
                       : const Text(
-                          'Book Repair',
+                          'Book Repair Now',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                 ),

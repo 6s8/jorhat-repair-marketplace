@@ -3,9 +3,14 @@ import '../../../models/job_model.dart';
 
 /// Immutable Booking State for Riverpod controller
 class BookingState extends Equatable {
-  final int currentStep; // 0: Category, 1: Issue, 2: Address, 3: Success
+  final int currentStep; // 0: Category, 1: Brand/Model, 2: Issue, 3: Address, 4: Success
   final String? selectedCategory;
-  final String issueDescription;
+  final int baseInspectionFee;
+  final String? applianceBrand;
+  final String customBrand;
+  final String applianceModel;
+  final List<String> selectedIssueChips;
+  final String customComplaint;
   final double? estimatedPrice;
   final String customerName;
   final String customerPhone;
@@ -26,7 +31,12 @@ class BookingState extends Equatable {
   const BookingState({
     this.currentStep = 0,
     this.selectedCategory,
-    this.issueDescription = '',
+    this.baseInspectionFee = 299,
+    this.applianceBrand,
+    this.customBrand = '',
+    this.applianceModel = '',
+    this.selectedIssueChips = const [],
+    this.customComplaint = '',
     this.estimatedPrice,
     this.customerName = '',
     this.customerPhone = '',
@@ -45,9 +55,31 @@ class BookingState extends Equatable {
     this.createdJob,
   });
 
+  /// Computed effective brand name
+  String? get effectiveBrand {
+    if (applianceBrand == 'Others') {
+      return customBrand.trim().isNotEmpty ? customBrand.trim() : 'Others';
+    }
+    return applianceBrand?.trim();
+  }
+
   // Validations
+  String get issueDescription {
+    final chips = selectedIssueChips.isNotEmpty ? "Selected Issues: ${selectedIssueChips.join(', ')}." : "";
+    final custom = customComplaint.trim().isNotEmpty ? " Notes: ${customComplaint.trim()}" : "";
+    final combined = "$chips$custom".trim();
+    return combined.isNotEmpty ? combined : "General repair & inspection needed";
+  }
+
   bool get isCategoryValid => selectedCategory != null && selectedCategory!.isNotEmpty;
-  bool get isIssueValid => issueDescription.trim().length >= 15 && issueDescription.trim().length <= 500;
+  
+  bool get isBrandValid {
+    if (applianceBrand == null || applianceBrand!.isEmpty) return false;
+    if (applianceBrand == 'Others') return customBrand.trim().isNotEmpty;
+    return true;
+  }
+
+  bool get isIssueValid => true;
   bool get isPhoneValid => RegExp(r'^[0-9]{10}$').hasMatch(customerPhone.trim());
   bool get isPincodeValid => RegExp(r'^[0-9]{6}$').hasMatch(pincode.trim());
   bool get isAddressValid =>
@@ -57,12 +89,17 @@ class BookingState extends Equatable {
       area.trim().isNotEmpty &&
       isPincodeValid;
 
-  bool get canSubmit => isCategoryValid && isIssueValid && isAddressValid;
+  bool get canSubmit => isCategoryValid && isBrandValid && isIssueValid && isAddressValid;
 
   BookingState copyWith({
     int? currentStep,
     String? selectedCategory,
-    String? issueDescription,
+    int? baseInspectionFee,
+    String? applianceBrand,
+    String? customBrand,
+    String? applianceModel,
+    List<String>? selectedIssueChips,
+    String? customComplaint,
     double? estimatedPrice,
     String? customerName,
     String? customerPhone,
@@ -83,7 +120,12 @@ class BookingState extends Equatable {
     return BookingState(
       currentStep: currentStep ?? this.currentStep,
       selectedCategory: selectedCategory ?? this.selectedCategory,
-      issueDescription: issueDescription ?? this.issueDescription,
+      baseInspectionFee: baseInspectionFee ?? this.baseInspectionFee,
+      applianceBrand: applianceBrand ?? this.applianceBrand,
+      customBrand: customBrand ?? this.customBrand,
+      applianceModel: applianceModel ?? this.applianceModel,
+      selectedIssueChips: selectedIssueChips ?? this.selectedIssueChips,
+      customComplaint: customComplaint ?? this.customComplaint,
       estimatedPrice: estimatedPrice ?? this.estimatedPrice,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,
@@ -107,7 +149,12 @@ class BookingState extends Equatable {
   List<Object?> get props => [
         currentStep,
         selectedCategory,
-        issueDescription,
+        baseInspectionFee,
+        applianceBrand,
+        customBrand,
+        applianceModel,
+        selectedIssueChips,
+        customComplaint,
         estimatedPrice,
         customerName,
         customerPhone,

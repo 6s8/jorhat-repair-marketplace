@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../models/job_model.dart';
-import '../../../../providers/realtime_job_list_provider.dart';
+import '../providers/technician_pending_jobs_provider.dart';
 
 /// Interactive map showing all pending repair requests as pins.
-/// Technicians can tap a pin to see job details.
+/// Technicians can tap a pin to see job details and accept directly.
 class JobFeedMapView extends ConsumerStatefulWidget {
   final String technicianId;
   const JobFeedMapView({super.key, required this.technicianId});
@@ -24,14 +25,15 @@ class _JobFeedMapViewState extends ConsumerState<JobFeedMapView> {
 
   @override
   Widget build(BuildContext context) {
-    final asyncJobs = ref.watch(realtimeJobListProvider);
+    final asyncJobs = ref.watch(technicianPendingJobsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return asyncJobs.when(
       loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF1565C0))),
+          child: CircularProgressIndicator(color: AppColors.primary)),
       error: (e, _) => Center(
         child: Text('Map error: $e',
-            style: const TextStyle(color: Colors.redAccent)),
+            style: const TextStyle(color: AppColors.error)),
       ),
       data: (jobs) {
         // Only plot jobs that have valid coordinates
@@ -53,7 +55,7 @@ class _JobFeedMapViewState extends ConsumerState<JobFeedMapView> {
                 onTap: (_, __) => setState(() => _selectedJob = null),
               ),
               children: [
-                // OpenStreetMap tiles — no API key needed
+                // OpenStreetMap tiles
                 TileLayer(
                   urlTemplate:
                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -72,7 +74,7 @@ class _JobFeedMapViewState extends ConsumerState<JobFeedMapView> {
 
             // ── OSM attribution ──────────────────────────────────────────
             Positioned(
-              bottom: _selectedJob != null ? 168 : 8,
+              bottom: _selectedJob != null ? 240 : 85,
               right: 8,
               child: Container(
                 padding:
@@ -96,23 +98,28 @@ class _JobFeedMapViewState extends ConsumerState<JobFeedMapView> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1D2E).withValues(alpha: 0.92),
+                    color: isDark ? const Color(0xFF1E293B) : AppColors.primary,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: const Color(0xFF1565C0).withValues(alpha: 0.5)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.location_on_rounded,
-                          color: Color(0xFF42A5F5), size: 16),
+                          color: AppColors.accent, size: 16),
                       const SizedBox(width: 6),
                       Text(
                         '${mappableJobs.length} Request${mappableJobs.length == 1 ? '' : 's'} on Map',
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
-                            fontWeight: FontWeight.w600),
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -120,12 +127,12 @@ class _JobFeedMapViewState extends ConsumerState<JobFeedMapView> {
               ),
             ),
 
-            // ── Job detail card (appears on pin tap) ─────────────────────
+            // ── Job detail card (positioned safely above floating navbar) ─────
             if (_selectedJob != null)
               Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
+                bottom: 85, // Positioned safely above the bottom floating nav bar (height ~70px)
+                left: 14,
+                right: 14,
                 child: _JobDetailCard(
                   job: _selectedJob!,
                   onClose: () => setState(() => _selectedJob = null),
@@ -157,16 +164,16 @@ class _JobFeedMapViewState extends ConsumerState<JobFeedMapView> {
               height: isSelected ? 46 : 36,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF1565C0)
-                    : const Color(0xFFE53935),
+                    ? AppColors.primary
+                    : AppColors.accent,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2.5),
                 boxShadow: [
                   BoxShadow(
                     color: (isSelected
-                            ? const Color(0xFF1565C0)
-                            : const Color(0xFFE53935))
-                        .withValues(alpha: 0.4),
+                            ? AppColors.primary
+                            : AppColors.accent)
+                        .withValues(alpha: 0.5),
                     blurRadius: 8,
                     spreadRadius: isSelected ? 2 : 0,
                   ),
@@ -176,7 +183,7 @@ class _JobFeedMapViewState extends ConsumerState<JobFeedMapView> {
                 isSelected
                     ? Icons.person_pin_rounded
                     : Icons.build_circle_rounded,
-                color: Colors.white,
+                color: isSelected ? Colors.white : AppColors.text,
                 size: isSelected ? 24 : 20,
               ),
             ),
@@ -186,8 +193,8 @@ class _JobFeedMapViewState extends ConsumerState<JobFeedMapView> {
               height: isSelected ? 16 : 12,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF1565C0)
-                    : const Color(0xFFE53935),
+                    ? AppColors.primary
+                    : AppColors.accent,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -199,26 +206,66 @@ class _JobFeedMapViewState extends ConsumerState<JobFeedMapView> {
 }
 
 // ─── Job detail card (slides up on pin tap) ───────────────────────────────────
-class _JobDetailCard extends StatelessWidget {
+class _JobDetailCard extends ConsumerStatefulWidget {
   final Job job;
   final VoidCallback onClose;
 
   const _JobDetailCard({required this.job, required this.onClose});
 
   @override
+  ConsumerState<_JobDetailCard> createState() => _JobDetailCardState();
+}
+
+class _JobDetailCardState extends ConsumerState<_JobDetailCard> {
+  bool _isAccepting = false;
+
+  Future<void> _handleAccept() async {
+    if (_isAccepting) return;
+    setState(() => _isAccepting = true);
+    final result = await ref
+        .read(technicianPendingJobsProvider.notifier)
+        .acceptJob(widget.job.id);
+    if (!mounted) return;
+    setState(() => _isAccepting = false);
+
+    if (result.isSuccess) {
+      final messenger = ScaffoldMessenger.of(context);
+      widget.onClose();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Job Accepted! Check Active Jobs tab.'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error ?? 'Could not accept job. It may have been accepted by another technician.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final job = widget.job;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1D2E),
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF1565C0).withValues(alpha: 0.4)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 20,
-              offset: const Offset(0, -4)),
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -228,15 +275,15 @@ class _JobDetailCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1565C0).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   _categoryIcon(job.applianceCategory),
-                  color: const Color(0xFF42A5F5),
-                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 12),
@@ -244,19 +291,25 @@ class _JobDetailCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(job.displayTitle,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
+                    Text(
+                      job.displayTitle,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.text,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
                     Text(
                       job.displayAddress.isNotEmpty
                           ? job.displayAddress
                           : 'Location: ${job.latitude?.toStringAsFixed(4)}, ${job.longitude?.toStringAsFixed(4)}',
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 12),
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : AppColors.textMuted,
+                        fontSize: 12,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -264,31 +317,68 @@ class _JobDetailCard extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded,
-                    color: Colors.white38, size: 20),
-                onPressed: onClose,
+                icon: const Icon(Icons.close_rounded, size: 20),
+                onPressed: widget.onClose,
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Row(
             children: [
               _Chip(
-                  icon: Icons.attach_money_rounded,
-                  label: '₹${job.price.toStringAsFixed(0)}',
-                  color: const Color(0xFF42A5F5)),
+                icon: Icons.currency_rupee_rounded,
+                label: '₹${job.price.toStringAsFixed(0)}',
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 8),
               _Chip(
-                  icon: Icons.circle,
-                  label: job.status.toUpperCase(),
-                  color: Colors.orange),
+                icon: Icons.circle,
+                label: job.status.toUpperCase(),
+                color: Colors.orange,
+              ),
               const SizedBox(width: 8),
               if (job.distanceKm > 0)
                 _Chip(
-                    icon: Icons.social_distance_rounded,
-                    label: '${job.distanceKm.toStringAsFixed(1)} km',
-                    color: Colors.green),
+                  icon: Icons.near_me_rounded,
+                  label: '${job.distanceKm.toStringAsFixed(1)} km',
+                  color: AppColors.success,
+                ),
             ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: _isAccepting ? null : _handleAccept,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: AppColors.text, // Charcoal text on Marigold for high contrast
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 3,
+              ),
+              icon: _isAccepting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.text,
+                      ),
+                    )
+                  : const Icon(Icons.bolt_rounded, color: AppColors.text),
+              label: Text(
+                _isAccepting
+                    ? 'ACCEPTING JOB...'
+                    : 'ACCEPT JOB (₹${job.price.toStringAsFixed(0)})',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -296,18 +386,17 @@ class _JobDetailCard extends StatelessWidget {
   }
 
   IconData _categoryIcon(String? cat) {
-    switch (cat) {
-      case 'AC':
-        return Icons.ac_unit;
-      case 'Refrigerator':
-        return Icons.kitchen;
-      case 'Washing Machine':
-        return Icons.local_laundry_service;
-      case 'Television':
-        return Icons.tv;
-      default:
-        return Icons.build_rounded;
-    }
+    if (cat == null) return Icons.build_rounded;
+    final lower = cat.toLowerCase();
+    if (lower.contains('ac')) return Icons.ac_unit_rounded;
+    if (lower.contains('fridge') || lower.contains('refrigerator')) return Icons.kitchen_rounded;
+    if (lower.contains('wash')) return Icons.local_laundry_service_rounded;
+    if (lower.contains('tv') || lower.contains('television')) return Icons.tv_rounded;
+    if (lower.contains('purifier') || lower.contains('ro')) return Icons.water_drop_rounded;
+    if (lower.contains('microwave') || lower.contains('oven')) return Icons.microwave_rounded;
+    if (lower.contains('geyser') || lower.contains('heater')) return Icons.water_rounded;
+    if (lower.contains('chimney')) return Icons.sensor_window_rounded;
+    return Icons.build_rounded;
   }
 }
 
@@ -320,7 +409,7 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
@@ -331,9 +420,14 @@ class _Chip extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 11),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );

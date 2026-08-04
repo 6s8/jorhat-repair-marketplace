@@ -8,6 +8,16 @@ sealed class Result<T> {
   factory Result.timeout([String? message]) = Timeout<T>;
   factory Result.unknownError([String? message]) = UnknownError<T>;
 
+  bool get isSuccess => this is Success<T>;
+
+  String? get error => switch (this) {
+        Success<T>() => null,
+        JobAlreadyTaken<T>(:final message) => message,
+        NetworkError<T>(:final message) => message,
+        Timeout<T>(:final message) => message,
+        UnknownError<T>(:final message) => message,
+      };
+
   R when<R>({
     required R Function(T data) success,
     required R Function(String message) jobAlreadyTaken,

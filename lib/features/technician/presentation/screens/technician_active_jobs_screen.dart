@@ -145,6 +145,51 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
   }
 
   // ── Status transitions ──────────────────────────────────────────────────────
+  Future<void> _promptForOtpAndUpdateStatus(String newStatus) async {
+    final isArrival = newStatus == 'in_progress';
+    final expectedOtp = isArrival ? widget.job.arrivalOtp : widget.job.completionOtp;
+    
+    if (expectedOtp == null || expectedOtp.isEmpty) {
+      // Fallback if job was created before OTP feature
+      return _updateStatus(newStatus);
+    }
+
+    final otpController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isArrival ? 'Enter Customer Arrival OTP' : 'Enter Customer Completion OTP'),
+        content: TextField(
+          controller: otpController,
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          decoration: const InputDecoration(
+            hintText: '4-digit OTP',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Verify'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      if (otpController.text.trim() == expectedOtp) {
+        await _updateStatus(newStatus);
+      } else {
+        _showError('Incorrect OTP. Please try again.');
+      }
+    }
+  }
+
   Future<void> _updateStatus(String newStatus) async {
     setState(() => _isUpdatingStatus = true);
     final result = await ref
@@ -297,6 +342,7 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
     // Determine which action button to show based on current status
     final bool isAccepted = status == 'accepted';
     final bool isOnTheWay = status == 'on_the_way';
+    final bool isInProgress = status == 'in_progress';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -603,12 +649,21 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
                   )
                 else if (isOnTheWay)
                   _StatusButton(
-                    label: '✅  Arrived — Complete Repair',
-                    sublabel: 'Mark job as completed & close invoice',
+                    label: '📍  Arrived — Start Repair',
+                    sublabel: 'Ask customer for Arrival OTP',
+                    color: Colors.orange.shade700,
+                    icon: Icons.handyman_rounded,
+                    isLoading: _isUpdatingStatus,
+                    onTap: () => _promptForOtpAndUpdateStatus('in_progress'),
+                  )
+                else if (isInProgress)
+                  _StatusButton(
+                    label: '✅  Complete Repair',
+                    sublabel: 'Ask customer for Completion OTP & close invoice',
                     color: const Color(0xFF2E7D32),
                     icon: Icons.check_circle_rounded,
                     isLoading: _isUpdatingStatus,
-                    onTap: () => _updateStatus('completed'),
+                    onTap: () => _promptForOtpAndUpdateStatus('completed'),
                   ),
               ],
             ),
@@ -623,6 +678,8 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
     switch (status) {
       case 'on_the_way':
         return Colors.orange;
+      case 'in_progress':
+        return Colors.purple;
       case 'completed':
         return Colors.green;
       default:
@@ -634,6 +691,8 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
     switch (status) {
       case 'on_the_way':
         return [const Color(0xFFE65100), const Color(0xFFF57C00)];
+      case 'in_progress':
+        return [Colors.purple.shade700, Colors.purple.shade400];
       case 'completed':
         return [const Color(0xFF1B5E20), const Color(0xFF2E7D32)];
       default:
@@ -645,6 +704,8 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
     switch (status) {
       case 'on_the_way':
         return Icons.directions_car_rounded;
+      case 'in_progress':
+        return Icons.handyman_rounded;
       case 'completed':
         return Icons.verified_rounded;
       default:
@@ -655,9 +716,11 @@ class _ActiveJobCardState extends ConsumerState<_ActiveJobCard> {
   String _statusLabel(String status) {
     switch (status) {
       case 'on_the_way':
-        return 'On the way';
+        return 'ON THE WAY';
+      case 'in_progress':
+        return 'IN PROGRESS';
       case 'completed':
-        return 'Completed';
+        return 'COMPLETED';
       default:
         return 'Assigned';
     }

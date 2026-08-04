@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_progress_indicator.dart';
 import '../../controller/booking_controller.dart';
 
-/// Step 4: Booking Confirmation Success Page.
+/// Step 5: Booking Confirmation Success Page for Fixly.
 class BookingSuccessPage extends ConsumerWidget {
   final VoidCallback onBackHome;
 
@@ -15,7 +18,6 @@ class BookingSuccessPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(bookingControllerProvider);
-    final theme = Theme.of(context);
     final job = state.createdJob;
 
     return Center(
@@ -24,35 +26,27 @@ class BookingSuccessPage extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Success Icon Animation
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check_circle_rounded,
-                size: 80,
-                color: Colors.green[600],
-              ),
+            // Morphing Checkmark Indicator
+            const AppProgressIndicator(
+              isCompleted: true,
+              size: 54,
             ),
             const SizedBox(height: 24),
 
             Text(
               'Booking Confirmed!',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
               'Your repair request has been sent to nearby technicians in Jorhat.',
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textMuted,
+                  ),
             ),
             const SizedBox(height: 28),
 
@@ -70,10 +64,10 @@ class BookingSuccessPage extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Booking ID', style: theme.textTheme.labelMedium),
+                        const Text('Booking ID', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                         Text(
                           job != null ? job.id.substring(0, 8).toUpperCase() : 'PENDING',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                         ),
                       ],
                     ),
@@ -82,7 +76,7 @@ class BookingSuccessPage extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Appliance Category', style: theme.textTheme.labelMedium),
+                        const Text('Appliance Category', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                         Text(
                           state.selectedCategory ?? 'Repair',
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -94,12 +88,12 @@ class BookingSuccessPage extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Estimated Price', style: theme.textTheme.labelMedium),
+                        const Text('Estimated Price', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                         Text(
                           '₹${state.estimatedPrice?.toStringAsFixed(0) ?? "399"}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF2E7D32),
+                            color: AppColors.success,
                             fontSize: 16,
                           ),
                         ),
@@ -110,7 +104,7 @@ class BookingSuccessPage extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Customer Name', style: theme.textTheme.labelMedium),
+                        const Text('Customer Name', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                         Text(
                           state.customerName,
                           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -119,13 +113,13 @@ class BookingSuccessPage extends ConsumerWidget {
                     ),
                     const Divider(height: 20),
 
-                    Text('Service Address', style: theme.textTheme.labelMedium),
+                    const Text('Service Address', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                     const SizedBox(height: 4),
                     Text(
                       state.formattedAddress.isNotEmpty
                           ? state.formattedAddress
                           : '${state.house}, ${state.area}, Jorhat',
-                      style: theme.textTheme.bodyMedium,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -133,12 +127,12 @@ class BookingSuccessPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // ── Live Tracking Button ──────────────────
+            // Live Tracking Button
             if (job != null)
               SizedBox(
                 width: double.infinity,
                 height: 52,
-                child: FilledButton.icon(
+                child: ElevatedButton.icon(
                   onPressed: () {
                     context.push('/track-job', extra: {
                       'jobId': job.id,
@@ -151,8 +145,8 @@ class BookingSuccessPage extends ConsumerWidget {
                     'View Live Status',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1565C0),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -163,7 +157,7 @@ class BookingSuccessPage extends ConsumerWidget {
 
             const SizedBox(height: 12),
 
-            // ── Book Another Repair ───────────────────
+            // Book Another Repair
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -173,13 +167,14 @@ class BookingSuccessPage extends ConsumerWidget {
                   onBackHome();
                 },
                 style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.primary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 child: const Text(
                   'Book Another Repair',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary),
                 ),
               ),
             ),

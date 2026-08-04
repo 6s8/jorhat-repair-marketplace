@@ -146,7 +146,7 @@ class _ListFeedView extends ConsumerWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
             itemCount: jobs.length,
             itemBuilder: (context, index) {
               final job = jobs[index];

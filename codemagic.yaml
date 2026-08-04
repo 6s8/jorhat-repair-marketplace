@@ -1,0 +1,75 @@
+workflows:
+  android-customer:
+    name: Customer App APK
+    max_build_duration: 30
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Build Customer APK
+        script: |
+          flutter build apk \
+            --release \
+            --target lib/main_customer.dart \
+            --build-name=1.0.0 \
+            --build-number=$(($(date +%s)))
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+    publishing:
+      email:
+        recipients:
+          - your@email.com
+        notify:
+          success: true
+          failure: true
+
+  android-technician:
+    name: Technician App APK
+    max_build_duration: 30
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Build Technician APK
+        script: |
+          flutter build apk \
+            --release \
+            --target lib/main_technician.dart \
+            --build-name=1.0.0 \
+            --build-number=$(($(date +%s)))
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+    publishing:
+      email:
+        recipients:
+          - your@email.com
+        notify:
+          success: true
+          failure: true
+
+  android-retailer:
+    name: Retailer App APK
+    max_build_duration: 30
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Build Retailer APK
+        script: |
+          flutter build apk \
+            --release \
+            --target lib/main_retailer.dart \
+            --build-name=1.0.0 \
+            --build-number=$(($(date +%s)))
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+    publishing:
+      email:
+        recipients:
+          - your@email.com
+        notify:
+          success: true
+          failure: true
