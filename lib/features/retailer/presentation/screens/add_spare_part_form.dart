@@ -318,119 +318,12 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 740),
-          child: Column(
-            children: [
-              // Dual Window Selector Switcher
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _activeFormWindow = 0),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _activeFormWindow == 0 ? Colors.white : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: _activeFormWindow == 0
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.build_circle_outlined,
-                                size: 18,
-                                color: _activeFormWindow == 0 ? primaryColor : Colors.grey.shade700,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Spare Part Form',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: _activeFormWindow == 0 ? primaryColor : Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _activeFormWindow = 1),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _activeFormWindow == 1 ? Colors.white : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: _activeFormWindow == 1
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.verified_outlined,
-                                size: 18,
-                                color: _activeFormWindow == 1 ? primaryColor : Colors.grey.shade700,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Refurbished Form',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: _activeFormWindow == 1 ? primaryColor : Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Active Form Window
-              AnimatedCrossFade(
-                firstChild: _buildSparePartWindow(primaryColor),
-                secondChild: _buildRefurbishedWindow(primaryColor),
-                crossFadeState: _activeFormWindow == 0
-                    ? CrossFadeState.showFirst
-                    : CrossFadeState.showSecond,
-                duration: const Duration(milliseconds: 250),
-              ),
-            ],
-          ),
+          child: _buildSparePartWindow(primaryColor),
         ),
       ),
     );
   }
+
 
   // --- WINDOW 1: Spare Part Form ---
   Widget _buildSparePartWindow(Color primaryColor) {
