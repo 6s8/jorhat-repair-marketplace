@@ -10,6 +10,7 @@ import '../../controller/retailer_orders_controller.dart';
 import '../../models/refurbished_appliance_model.dart';
 import '../../models/spare_part_model.dart';
 import '../../models/retailer_order_model.dart';
+import '../../models/appliance_order_model.dart';
 import '../../../auth/controllers/auth_controller.dart';
 import 'add_spare_part_form.dart';
 import 'retailer_profile_dashboard_tab.dart';
@@ -24,7 +25,8 @@ class RetailerDashboardScreen extends ConsumerStatefulWidget {
 
 class _RetailerDashboardScreenState
     extends ConsumerState<RetailerDashboardScreen> {
-  int _selectedTab = 0; // 0 = Spare Parts, 1 = Refurbished, 2 = Orders, 3 = Store Profile
+  int _selectedTab = 0; // 0 = Spare Parts, 1 = Refurbished, 2 = Add Item, 3 = Orders, 4 = Store Profile
+  int _ordersSubTab = 0; // 0 = Spare Part Orders, 1 = Appliance Orders
   final _formKey = GlobalKey<FormState>();
   final _refurbishedFormKey = GlobalKey<FormState>();
 
@@ -665,86 +667,186 @@ class _RetailerDashboardScreenState
 
   // Orders Tab
   Widget _buildOrdersTab() {
-    final ordersAsync = ref.watch(retailerOrdersProvider);
-
     return Column(
       children: [
+        // Sub-tab selector
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           color: Colors.white,
           child: Row(
             children: [
-              const Text('Filter: ',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('All'),
-                selected: _orderTypeFilter == 'All',
-                onSelected: (_) => setState(() => _orderTypeFilter = 'All'),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _ordersSubTab = 0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _ordersSubTab == 0
+                              ? AppColors.primary
+                              : Colors.transparent,
+                          width: 2.5,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.build_circle_outlined,
+                          size: 16,
+                          color: _ordersSubTab == 0
+                              ? AppColors.primary
+                              : Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Spare Parts',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: _ordersSubTab == 0
+                                ? AppColors.primary
+                                : Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 6),
-              ChoiceChip(
-                label: const Text('Customer Orders'),
-                selected: _orderTypeFilter == 'Customer',
-                onSelected: (_) =>
-                    setState(() => _orderTypeFilter = 'Customer'),
-              ),
-              const SizedBox(width: 6),
-              ChoiceChip(
-                label: const Text('Technician Orders'),
-                selected: _orderTypeFilter == 'Technician',
-                onSelected: (_) =>
-                    setState(() => _orderTypeFilter = 'Technician'),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _ordersSubTab = 1),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _ordersSubTab == 1
+                              ? AppColors.accent
+                              : Colors.transparent,
+                          width: 2.5,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.kitchen_rounded,
+                          size: 16,
+                          color: _ordersSubTab == 1
+                              ? AppColors.accent
+                              : Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Appliances',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: _ordersSubTab == 1
+                                ? AppColors.accent
+                                : Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
         ),
+        const Divider(height: 1),
+        // Sub-tab content
         Expanded(
-          child: ordersAsync.when(
-            loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.accent)),
-            error: (err, _) => Center(
-              child: Text('Error loading orders: $err'),
-            ),
-            data: (allOrders) {
-              final orders = allOrders.where((o) {
-                if (_orderTypeFilter == 'Customer') {
-                  return o.orderType.toLowerCase() == 'customer';
-                }
-                if (_orderTypeFilter == 'Technician') {
-                  return o.orderType.toLowerCase() == 'technician';
-                }
-                return true;
-              }).toList();
-
-              if (orders.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.local_shipping_outlined,
-                          size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      Text('No incoming orders found.',
-                          style: TextStyle(color: Colors.grey.shade600)),
-                    ],
-                  ),
-                );
-              }
-
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                itemCount: orders.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final order = orders[index];
-                  return _buildOrderCard(order);
-                },
-              );
-            },
-          ),
+          child: _ordersSubTab == 0
+              ? _buildSparePartOrdersList()
+              : _buildApplianceOrdersList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildSparePartOrdersList() {
+    final ordersAsync = ref.watch(retailerOrdersProvider);
+    return ordersAsync.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+      error: (err, _) => _buildOrdersError('spare_part_orders'),
+      data: (orders) {
+        if (orders.isEmpty) return _buildOrdersEmpty('No spare part orders yet.');
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          itemCount: orders.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (_, i) => _buildOrderCard(orders[i]),
+        );
+      },
+    );
+  }
+
+  Widget _buildApplianceOrdersList() {
+    final ordersAsync = ref.watch(applianceOrdersProvider);
+    return ordersAsync.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+      error: (err, _) => _buildOrdersError('appliance_orders'),
+      data: (orders) {
+        if (orders.isEmpty) return _buildOrdersEmpty('No appliance orders yet.');
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          itemCount: orders.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (_, i) => _buildApplianceOrderCard(orders[i]),
+        );
+      },
+    );
+  }
+
+  Widget _buildOrdersEmpty(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inbox_rounded, size: 56, color: Colors.grey.shade300),
+          const SizedBox(height: 12),
+          Text(message, style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+          const SizedBox(height: 6),
+          Text('Orders placed by customers will appear here.',
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrdersError(String tableName) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off_rounded, size: 56, color: Colors.orange.shade300),
+            const SizedBox(height: 12),
+            Text(
+              'Table not set up yet',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Run the SQL in supabase_schema.sql to create the "$tableName" table in your Supabase project. Orders will sync automatically once done.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -876,6 +978,9 @@ class _RetailerDashboardScreenState
     } else if (status == 'ready_for_pickup') {
       color = AppColors.accent;
       label = 'READY FOR PICKUP';
+    } else if (status == 'pending') {
+      color = Colors.orange;
+      label = 'PENDING';
     }
 
     return Container(
@@ -895,4 +1000,122 @@ class _RetailerDashboardScreenState
       ),
     );
   }
+
+  Widget _buildApplianceOrderCard(ApplianceOrder order) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
+                  ),
+                  child: Text(
+                    order.applianceCategory.isNotEmpty
+                        ? order.applianceCategory.toUpperCase()
+                        : 'APPLIANCE ORDER',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.accent.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ),
+                _buildStatusBadge(order.status),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              order.applianceTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            if (order.brand.isNotEmpty || order.condition.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                [if (order.brand.isNotEmpty) order.brand, if (order.condition.isNotEmpty) order.condition].join(' • '),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ],
+            const SizedBox(height: 4),
+            Text(
+              'Total Amount: ₹${order.totalAmount.toStringAsFixed(0)}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+            if (order.deliveryAddress.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Address: ${order.deliveryAddress}',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+              ),
+            ],
+            if (order.customerPhone.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Customer Phone: ${order.customerPhone}',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ],
+            const Divider(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (order.status == 'pending')
+                  ElevatedButton(
+                    onPressed: () => ref
+                        .read(applianceOrderActionProvider.notifier)
+                        .updateStatus(order.id, 'in_progress'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    child: const Text('Start Preparing'),
+                  ),
+                if (order.status == 'in_progress')
+                  ElevatedButton(
+                    onPressed: () => ref
+                        .read(applianceOrderActionProvider.notifier)
+                        .updateStatus(order.id, 'ready_for_pickup'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: AppColors.text,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    child: const Text('Ready for Pickup'),
+                  ),
+                if (order.status == 'ready_for_pickup' || order.status == 'in_progress') ...[
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => ref
+                        .read(applianceOrderActionProvider.notifier)
+                        .updateStatus(order.id, 'completed'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    child: const Text('Complete Order'),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+

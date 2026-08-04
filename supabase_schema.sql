@@ -82,3 +82,77 @@ BEGIN
     RETURNING *;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================
+-- 6. spare_part_orders — Orders placed from the Marketplace
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.spare_part_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id TEXT NOT NULL,
+    retailer_id TEXT NOT NULL,
+    part_id TEXT NOT NULL,
+    part_name TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    delivery_address TEXT,
+    total_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'in_progress', 'ready_for_pickup', 'completed', 'cancelled')),
+    order_type TEXT NOT NULL DEFAULT 'customer'
+        CHECK (order_type IN ('customer', 'technician')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.spare_part_orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view spare_part_orders"
+ON public.spare_part_orders FOR SELECT
+TO authenticated, anon USING (true);
+
+CREATE POLICY "Anyone can insert spare_part_orders"
+ON public.spare_part_orders FOR INSERT
+TO authenticated, anon WITH CHECK (true);
+
+CREATE POLICY "Anyone can update spare_part_orders"
+ON public.spare_part_orders FOR UPDATE
+TO authenticated, anon USING (true);
+
+-- Add spare_part_orders to realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE public.spare_part_orders;
+
+-- ============================================================
+-- 7. appliance_orders — Orders placed for Refurbished Appliances
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.appliance_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id TEXT NOT NULL,
+    retailer_id TEXT NOT NULL,
+    appliance_id TEXT NOT NULL,
+    appliance_title TEXT NOT NULL,
+    appliance_category TEXT,
+    brand TEXT,
+    condition TEXT,
+    total_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    delivery_address TEXT,
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'in_progress', 'ready_for_pickup', 'completed', 'cancelled')),
+    customer_phone TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.appliance_orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view appliance_orders"
+ON public.appliance_orders FOR SELECT
+TO authenticated, anon USING (true);
+
+CREATE POLICY "Anyone can insert appliance_orders"
+ON public.appliance_orders FOR INSERT
+TO authenticated, anon WITH CHECK (true);
+
+CREATE POLICY "Anyone can update appliance_orders"
+ON public.appliance_orders FOR UPDATE
+TO authenticated, anon USING (true);
+
+-- Add appliance_orders to realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE public.appliance_orders;
+
