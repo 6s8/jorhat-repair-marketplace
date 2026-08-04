@@ -19,7 +19,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your@email.com
+          - aapszipper@gmail.com
         notify:
           success: true
           failure: true
@@ -44,7 +44,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your@email.com
+          - aapszipper@gmail.com
         notify:
           success: true
           failure: true
@@ -69,7 +69,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your@email.com
+          - aapszipper@gmail.com
         notify:
           success: true
           failure: true
