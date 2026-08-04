@@ -11,6 +11,7 @@ import '../../../booking/presentation/pages/map_picker_sheet.dart';
 import '../../models/customer_account_models.dart';
 import '../../../auth/controllers/auth_controller.dart';
 import '../providers/customer_account_providers.dart';
+import 'customer_marketplace_orders_screen.dart';
 
 /// Customer Profile, Dashboard & Account Hub Screen for Fixly.
 class CustomerProfileDashboardScreen extends ConsumerStatefulWidget {
@@ -1462,6 +1463,18 @@ class _CustomerProfileDashboardScreenState
         'subtitle': 'Track Active Jobs',
         'color': AppColors.accent,
         'tab': 1,
+      },
+      {
+        'icon': Icons.receipt_long_rounded,
+        'title': 'My Orders',
+        'subtitle': 'Parts & Appliances',
+        'color': Colors.deepPurple,
+        'action': () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CustomerMarketplaceOrdersScreen(),
+              ),
+            ),
       },
       {
         'icon': Icons.storefront_rounded,
