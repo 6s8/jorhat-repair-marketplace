@@ -25,6 +25,7 @@ class _CustomerMarketplaceOrdersScreenState
 
   RealtimeChannel? _spareChannel;
   RealtimeChannel? _applianceChannel;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
@@ -32,10 +33,17 @@ class _CustomerMarketplaceOrdersScreenState
     _tabController = TabController(length: 2, vsync: this);
     _loadAll();
     _subscribeRealtime();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (mounted) {
+        _fetchSpareOrders();
+        _fetchApplianceOrders();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _tabController.dispose();
     _spareChannel?.unsubscribe();
     _applianceChannel?.unsubscribe();
@@ -218,6 +226,14 @@ const _stageIcons = {
   'completed': Icons.check_circle_rounded,
 };
 
+int _getStageIndex(String rawStatus) {
+  final s = rawStatus.toLowerCase().trim().replaceAll('-', '_').replaceAll(' ', '_');
+  if (s == 'completed' || s == 'delivered' || s == 'done' || s == 'fulfilled') return 3;
+  if (s == 'ready_for_pickup' || s == 'ready' || s == 'shipped' || s == 'out_for_delivery' || s == 'on_the_way') return 2;
+  if (s == 'in_progress' || s == 'processing' || s == 'preparing' || s == 'accepted' || s == 'confirmed') return 1;
+  return 0; // pending / order placed
+}
+
 class _OrderTimeline extends StatelessWidget {
   final String currentStatus;
   final Color activeColor;
@@ -229,7 +245,7 @@ class _OrderTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentIdx = _spareStages.indexOf(currentStatus);
+    final currentIdx = _getStageIndex(currentStatus);
 
     return Column(
       children: List.generate(_spareStages.length, (i) {
@@ -328,7 +344,7 @@ class _SpareOrderCard extends StatefulWidget {
 }
 
 class _SpareOrderCardState extends State<_SpareOrderCard> {
-  bool _expanded = false;
+  bool _expanded = true;
 
   @override
   Widget build(BuildContext context) {
@@ -439,7 +455,7 @@ class _ApplianceOrderCard extends StatefulWidget {
 }
 
 class _ApplianceOrderCardState extends State<_ApplianceOrderCard> {
-  bool _expanded = false;
+  bool _expanded = true;
 
   @override
   Widget build(BuildContext context) {
