@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/supabase/supabase_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../retailer/models/refurbished_appliance_model.dart';
 
@@ -301,19 +302,37 @@ class RefurbishedApplianceCard extends StatelessWidget {
                       ],
                     ),
                     const Spacer(),
-                    ElevatedButton.icon(
-                      onPressed: () => _makePhoneCall(context, appliance.retailerPhone),
-                      icon: const Icon(Icons.phone_in_talk, size: 18),
-                      label: const Text('CALL RETAILER'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: AppColors.text, // Charcoal on Marigold for high contrast accessibility
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => _makePhoneCall(context, appliance.retailerPhone),
+                          icon: const Icon(Icons.phone_in_talk, size: 16),
+                          label: const Text('CALL'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: primaryColor,
+                            side: BorderSide(color: primaryColor),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
                         ),
-                        elevation: 1,
-                      ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () => _orderAppliance(context),
+                          icon: const Icon(Icons.shopping_bag_outlined, size: 16),
+                          label: const Text('ORDER NOW'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: AppColors.text,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 1,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -322,6 +341,159 @@ class RefurbishedApplianceCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _orderAppliance(BuildContext context) {
+    final nameCtrl = TextEditingController(text: 'Customer');
+    final phoneCtrl = TextEditingController(text: '9876543210');
+    final addressCtrl = TextEditingController(
+        text: 'AT Road, Club Road Area, Jorhat, Assam - 785001');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        bool isSubmitting = false;
+
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Order ${appliance.title}',
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(sheetCtx),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Price: ₹${appliance.customerPrice.toStringAsFixed(0)} • Warranty: ${appliance.warrantyPeriod}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(ctx).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Full Name',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: addressCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Delivery Address',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              setModalState(() => isSubmitting = true);
+                              try {
+                                await supabase.from('appliance_orders').insert({
+                                  'customer_id': 'cust-assam-001',
+                                  'retailer_id': appliance.retailerId,
+                                  'appliance_id': appliance.id,
+                                  'appliance_title': appliance.title,
+                                  'appliance_category': appliance.category,
+                                  'brand': appliance.brand,
+                                  'condition': appliance.condition,
+                                  'total_amount': appliance.customerPrice,
+                                  'delivery_address': addressCtrl.text.trim(),
+                                  'customer_phone': phoneCtrl.text.trim(),
+                                  'status': 'pending',
+                                });
+
+                                if (sheetCtx.mounted) {
+                                  Navigator.pop(sheetCtx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          '${appliance.title} ordered successfully!'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                setModalState(() => isSubmitting = false);
+                                if (sheetCtx.mounted) {
+                                  ScaffoldMessenger.of(sheetCtx).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Order failed: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: AppColors.text,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AppColors.text),
+                            )
+                          : const Text(
+                              'CONFIRM & PLACE ORDER',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
