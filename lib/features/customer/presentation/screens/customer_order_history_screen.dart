@@ -13,6 +13,7 @@ import '../../../../providers/job_repository_provider.dart';
 import '../../../tracking/job_status_tracker_screen.dart';
 import '../widgets/job_progress_timeline.dart';
 import 'invoice_view_screen.dart';
+import 'customer_marketplace_orders_screen.dart';
 
 /// Customer My Bookings Screen with Realtime Embedded Live Tracker Cards.
 class CustomerOrderHistoryScreen extends ConsumerStatefulWidget {
@@ -29,6 +30,7 @@ class _CustomerOrderHistoryScreenState
   List<Job> _jobs = [];
   bool _isLoading = true;
   String? _errorMessage;
+  int _subTab = 0; // 0 = Service Bookings, 1 = Marketplace Orders
 
   @override
   void initState() {
@@ -124,73 +126,169 @@ class _CustomerOrderHistoryScreenState
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          // Sub-Tab Switcher
+          Container(
+            color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _subTab = 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _subTab == 0
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            width: 2.5,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.handyman_outlined,
+                            size: 16,
+                            color: _subTab == 0
+                                ? AppColors.primary
+                                : Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Repair Services',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: _subTab == 0
+                                  ? AppColors.primary
+                                  : Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _subTab = 1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _subTab == 1
+                                ? AppColors.accent
+                                : Colors.transparent,
+                            width: 2.5,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.receipt_long_outlined,
+                            size: 16,
+                            color: _subTab == 1
+                                ? AppColors.accent
+                                : Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Marketplace Orders',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: _subTab == 1
+                                  ? AppColors.accent
+                                  : Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Sub-Tab Content
+          Expanded(
+            child: _subTab == 0 ? _buildRepairServicesTab() : const CustomerMarketplaceOrdersScreen(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRepairServicesTab() {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: AppProgressIndicator(label: 'Loading bookings...')),
-      );
+      return const Center(child: AppProgressIndicator(label: 'Loading bookings...'));
     }
 
     if (_errorMessage != null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-              const SizedBox(height: 12),
-              Text(_errorMessage!, style: const TextStyle(color: AppColors.error)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => setState(() => _initJobsRealtime()),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+            const SizedBox(height: 12),
+            Text(_errorMessage!, style: const TextStyle(color: AppColors.error)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => setState(() => _initJobsRealtime()),
+              child: const Text('Retry'),
+            ),
+          ],
         ),
       );
     }
 
     if (_jobs.isEmpty) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.history_rounded, size: 64, color: Colors.grey.shade400),
-              const SizedBox(height: 16),
-              const Text(
-                'No repair bookings found.',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 4),
-              const Text('Book a service from the home screen.', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
-            ],
-          ),
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.history_rounded, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            const Text(
+              'No repair bookings found.',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 4),
+            const Text('Book a service from the home screen.', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
+          ],
         ),
       );
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        color: AppColors.accent,
-        onRefresh: _fetchLatestJobs,
-        child: ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: _jobs.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 16),
-          itemBuilder: (context, index) {
-            final job = _jobs[index];
-            final isActive = job.status == 'pending' ||
-                job.status == 'accepted' ||
-                job.status == 'on_the_way' ||
-                job.status == 'in_progress';
+    return RefreshIndicator(
+      color: AppColors.accent,
+      onRefresh: _fetchLatestJobs,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _jobs.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 16),
+        itemBuilder: (context, index) {
+          final job = _jobs[index];
+          final isActive = job.status == 'pending' ||
+              job.status == 'accepted' ||
+              job.status == 'on_the_way' ||
+              job.status == 'in_progress';
 
-            if (isActive) {
-              return _ActiveEmbeddedBookingCard(job: job);
-            }
-            return _CompletedBookingCard(job: job);
-          },
-        ),
+          if (isActive) {
+            return _ActiveEmbeddedBookingCard(job: job);
+          }
+          return _CompletedBookingCard(job: job);
+        },
       ),
     );
   }
