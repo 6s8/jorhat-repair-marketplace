@@ -1,0 +1,53 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual triggering from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Flutter Web (Project Pages)
+        # NOTE: For Project Pages (https://<username>.github.io/<repo>/), use --base-href "/<repo>/"
+        # For User Pages (https://<username>.github.io/), use --base-href "/"
+        run: |
+          flutter build web \
+            --release \
+            --base-href "/jorhat-repair-marketplace/" \
+            -t lib/main_customer.dart \
+            -o build/web
+
+      - name: Create .nojekyll File
+        # Prevents GitHub Pages from ignoring directories starting with underscore (_)
+        run: touch build/web/.nojekyll
+
+      - name: Create 404.html for SPA Routing
+        # GitHub Pages serves static files only. Copying index.html to 404.html allows
+        # Flutter's GoRouter to handle deep links and browser refreshes without 404 errors.
+        run: cp build/web/index.html build/web/404.html
+
+      - name: Deploy to gh-pages Branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          force_orphan: true # Keeps gh-pages branch clean without bloating history
