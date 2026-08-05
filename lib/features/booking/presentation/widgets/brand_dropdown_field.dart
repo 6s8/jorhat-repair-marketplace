@@ -29,7 +29,7 @@ class BrandDropdownField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: (selectedBrand != null && applianceBrands.contains(selectedBrand))
+      initialValue: (selectedBrand != null && applianceBrands.contains(selectedBrand))
           ? selectedBrand
           : null,
       decoration: InputDecoration(

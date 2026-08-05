@@ -185,23 +185,22 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
                       ? null
                       : () async {
                           await controller.getCurrentLocation();
-                          if (mounted) {
-                            final newState = ref.read(bookingControllerProvider);
-                            setState(() {
-                              if (newState.area.isNotEmpty) _areaController.text = newState.area;
-                              if (newState.pincode.isNotEmpty) _pinController.text = newState.pincode;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  newState.latitude != null
-                                      ? 'GPS Location captured: ${newState.latitude!.toStringAsFixed(4)}° N, ${newState.longitude!.toStringAsFixed(4)}° E'
-                                      : 'Could not acquire GPS signal. Defaulting to Jorhat.',
-                                ),
-                                duration: const Duration(seconds: 3),
+                          if (!context.mounted) return;
+                          final newState = ref.read(bookingControllerProvider);
+                          setState(() {
+                            if (newState.area.isNotEmpty) _areaController.text = newState.area;
+                            if (newState.pincode.isNotEmpty) _pinController.text = newState.pincode;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                newState.latitude != null
+                                    ? 'GPS Location captured: ${newState.latitude!.toStringAsFixed(4)}° N, ${newState.longitude!.toStringAsFixed(4)}° E'
+                                    : 'Could not acquire GPS signal. Defaulting to Jorhat.',
                               ),
-                            );
-                          }
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
                         },
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(0, 48),
@@ -358,7 +357,7 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: (_selectedCity.isNotEmpty &&
+                  initialValue: (_selectedCity.isNotEmpty &&
                           (_assamCities.contains(_selectedCity) ||
                               !_assamCities.contains(_selectedCity)))
                       ? _selectedCity

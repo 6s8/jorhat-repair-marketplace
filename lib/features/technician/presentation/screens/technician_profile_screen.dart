@@ -44,7 +44,7 @@ class TechnicianProfileScreen extends ConsumerWidget {
                   boxShadow: [
                     BoxShadow(
                       color: (profile.isOnline ? Colors.green : Colors.grey)
-                          .withOpacity(0.3),
+                          .withValues(alpha: 0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -96,7 +96,7 @@ class TechnicianProfileScreen extends ConsumerWidget {
                     ),
                     Switch(
                       value: profile.isOnline,
-                      activeColor: Colors.white,
+                      activeThumbColor: Colors.white,
                       activeTrackColor: Colors.green.shade400,
                       inactiveTrackColor: Colors.grey.shade700,
                       onChanged: (val) async {
@@ -119,7 +119,7 @@ class TechnicianProfileScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -165,10 +165,10 @@ class TechnicianProfileScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.deepOrange.withOpacity(0.3)),
+                    border: Border.all(color: Colors.deepOrange.withValues(alpha: 0.3)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -182,7 +182,7 @@ class TechnicianProfileScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.deepOrange.withOpacity(0.12),
+                              color: Colors.deepOrange.withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(

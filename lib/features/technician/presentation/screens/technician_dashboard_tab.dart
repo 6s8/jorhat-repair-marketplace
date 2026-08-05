@@ -64,7 +64,7 @@ class TechnicianDashboardTab extends ConsumerWidget {
                     ),
                     subtitle: const Text('Enable dark appearance for night shifts'),
                     value: isDark,
-                    activeColor: AppColors.accent,
+                    activeThumbColor: AppColors.accent,
                     onChanged: (val) {
                       ref.read(themeModeProvider.notifier).toggleTheme();
                     },
@@ -167,7 +167,7 @@ class TechnicianDashboardTab extends ConsumerWidget {
                             title: const Text('Dark Theme Mode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                             subtitle: const Text('Toggle dark mode appearance', style: TextStyle(fontSize: 12)),
                             value: isDark,
-                            activeColor: AppColors.accent,
+                            activeThumbColor: AppColors.accent,
                             onChanged: (val) {
                               ref.read(themeModeProvider.notifier).toggleTheme();
                             },
@@ -335,7 +335,7 @@ class _HeroHeader extends StatelessWidget {
                   ),
                   Switch(
                     value: isOnline,
-                    activeColor: Colors.white,
+                    activeThumbColor: Colors.white,
                     activeTrackColor: AppColors.success,
                     onChanged: onToggle,
                   ),

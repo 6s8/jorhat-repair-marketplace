@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 
 /// Lightweight, layout-preserving Skeleton Loader with smooth pulsing animation.
 /// Replaces blank circular progress indicators to prevent UI layout jumps.
@@ -78,11 +77,11 @@ class SkeletonCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
+            children: [
               SkeletonLoader(width: 42, height: 42, borderRadius: 21),
               SizedBox(width: 12),
               Expanded(
@@ -97,8 +96,8 @@ class SkeletonCard extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(),
-          const SkeletonLoader(width: double.infinity, height: 12, borderRadius: 4),
+          Spacer(),
+          SkeletonLoader(width: double.infinity, height: 12, borderRadius: 4),
         ],
       ),
     );

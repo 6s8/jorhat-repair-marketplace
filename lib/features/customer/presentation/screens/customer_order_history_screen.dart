@@ -10,7 +10,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_progress_indicator.dart';
 import '../../../../models/job_model.dart';
 import '../../../../providers/job_repository_provider.dart';
-import '../../../tracking/job_status_tracker_screen.dart';
 import '../widgets/job_progress_timeline.dart';
 import 'invoice_view_screen.dart';
 import 'customer_marketplace_orders_screen.dart';
@@ -59,11 +58,9 @@ class _CustomerOrderHistoryScreenState
             .order('created_at', ascending: false);
         if (mounted) {
           setState(() {
-            if (data is List) {
-              _jobs = (data as List)
-                  .map((json) => Job.fromJson(json as Map<String, dynamic>))
-                  .toList();
-            }
+            _jobs = data
+                .map((json) => Job.fromJson(json))
+                .toList();
             _isLoading = false;
           });
         }
@@ -104,13 +101,9 @@ class _CustomerOrderHistoryScreenState
             .from('jobs')
             .select()
             .order('created_at', ascending: false);
-        if (data is List) {
-          updated = (data as List)
-              .map((json) => Job.fromJson(json as Map<String, dynamic>))
-              .toList();
-        } else {
-          updated = [];
-        }
+        updated = data
+            .map((json) => Job.fromJson(json))
+            .toList();
       }
       if (mounted) {
         setState(() => _jobs = updated);

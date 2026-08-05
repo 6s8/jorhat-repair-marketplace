@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../../core/widgets/modern_floating_nav_bar.dart';
 import '../../../../core/providers/refurbished_store_provider.dart';
@@ -27,27 +26,6 @@ class _RetailerDashboardScreenState
     extends ConsumerState<RetailerDashboardScreen> {
   int _selectedTab = 0; // 0 = Spare Parts, 1 = Refurbished, 2 = Add Item, 3 = Orders, 4 = Store Profile
   int _ordersSubTab = 0; // 0 = Spare Part Orders, 1 = Appliance Orders
-  final _formKey = GlobalKey<FormState>();
-  final _refurbishedFormKey = GlobalKey<FormState>();
-
-  final String _retailerId = 'guest_retailer_001';
-
-  // Spare Part Form Controllers
-
-
-  // Refurbished Appliance Form Controllers
-  final _refTitleController = TextEditingController();
-  final _refBrandController = TextEditingController();
-  final _refCustPriceController = TextEditingController();
-  final _refOrigPriceController = TextEditingController();
-  final _refDescController = TextEditingController();
-  final _refPhoneController = TextEditingController(text: '+919876543210');
-  final _refImageUrlController = TextEditingController();
-
-  String _selectedRefCategory = 'AC';
-  String _selectedCondition = 'Certified Refurbished';
-  String _selectedWarranty = '6 Months Shop Warranty';
-  String _orderTypeFilter = 'All';
 
   final List<String> _categories = const [
     'AC',
@@ -60,108 +38,6 @@ class _RetailerDashboardScreenState
     'Microwave',
     'Other'
   ];
-
-  final List<String> _conditions = const [
-    'Certified Refurbished',
-    'Like New (Refurbished)',
-    'Good Condition',
-    'Factory Refurbished',
-  ];
-
-  final List<String> _warranties = const [
-    '3 Months Shop Warranty',
-    '6 Months Shop Warranty',
-    '1 Year Shop Warranty',
-    'No Warranty',
-  ];
-
-  @override
-  void dispose() {
-
-
-    _refTitleController.dispose();
-    _refBrandController.dispose();
-    _refCustPriceController.dispose();
-    _refOrigPriceController.dispose();
-    _refDescController.dispose();
-    _refPhoneController.dispose();
-    _refImageUrlController.dispose();
-    super.dispose();
-  }
-
-  String _getDefaultImageForCategory(String category) {
-    final cat = category.toLowerCase();
-    if (cat.contains('ac')) return 'assets/appliances/ac.png';
-    if (cat.contains('fridge') || cat.contains('refrig')) return 'assets/appliances/refrigerator.png';
-    if (cat.contains('wash')) return 'assets/appliances/washing_machine.png';
-    if (cat.contains('tv') || cat.contains('telev')) return 'assets/appliances/television.png';
-    if (cat.contains('water') || cat.contains('purif')) return 'assets/appliances/purifier.png';
-    if (cat.contains('micro')) return 'assets/appliances/microwave.png';
-    if (cat.contains('cool')) return 'assets/appliances/cooler.png';
-    if (cat.contains('geys')) return 'assets/appliances/geyser.png';
-    return 'assets/appliances/refrigerator.png';
-  }
-
-
-
-  void _submitRefurbishedForm() {
-    if (_refurbishedFormKey.currentState!.validate()) {
-      final customUrl = _refImageUrlController.text.trim();
-      final finalImg = customUrl.isNotEmpty
-          ? customUrl
-          : _getDefaultImageForCategory(_selectedRefCategory);
-
-      final item = RefurbishedAppliance(
-        id: const Uuid().v4(),
-        retailerId: _retailerId,
-        title: _refTitleController.text.trim(),
-        category: _selectedRefCategory,
-        brand: _refBrandController.text.trim().isEmpty
-            ? 'Generic'
-            : _refBrandController.text.trim(),
-        condition: _selectedCondition,
-        warrantyPeriod: _selectedWarranty,
-        customerPrice: double.tryParse(_refCustPriceController.text.trim()) ?? 0.0,
-        originalPrice: _refOrigPriceController.text.trim().isNotEmpty
-            ? double.tryParse(_refOrigPriceController.text)
-            : null,
-        imageUrl: finalImg,
-        description: _refDescController.text.trim().isEmpty
-            ? 'Certified refurbished appliance in top working condition.'
-            : _refDescController.text.trim(),
-        retailerPhone: _refPhoneController.text.trim().isEmpty
-            ? '+919876543210'
-            : _refPhoneController.text.trim(),
-        createdAt: DateTime.now(),
-      );
-
-      ref.read(refurbishedStoreProvider.notifier).addOrUpdateAppliance(item);
-      _clearRefurbishedForm();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Refurbished appliance listed with picture!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    }
-  }
-
-
-
-  void _clearRefurbishedForm() {
-    _refTitleController.clear();
-    _refBrandController.clear();
-    _refCustPriceController.clear();
-    _refOrigPriceController.clear();
-    _refDescController.clear();
-    _refImageUrlController.clear();
-    setState(() {
-      _selectedRefCategory = 'AC';
-      _selectedCondition = 'Certified Refurbished';
-      _selectedWarranty = '6 Months Shop Warranty';
-    });
-  }
 
   void _showEditDialog(SparePart part) {
     final editNameCtrl = TextEditingController(text: part.partName);
@@ -851,6 +727,8 @@ class _RetailerDashboardScreenState
   }
 
   Widget _buildOrderCard(RetailerOrder order) {
+    final optimisticStatuses = ref.watch(retailerOrderActionProvider);
+    final status = optimisticStatuses[order.id] ?? order.status;
     final isTech = order.orderType.toLowerCase() == 'technician';
 
     return Card(
@@ -889,7 +767,7 @@ class _RetailerDashboardScreenState
                     ),
                   ),
                 ),
-                _buildStatusBadge(order.status),
+                _buildStatusBadge(status),
               ],
             ),
             const SizedBox(height: 10),
@@ -916,7 +794,7 @@ class _RetailerDashboardScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (order.status == 'pending')
+                if (status == 'pending')
                   ElevatedButton(
                     onPressed: () => ref
                         .read(retailerOrderActionProvider.notifier)
@@ -929,7 +807,7 @@ class _RetailerDashboardScreenState
                     ),
                     child: const Text('Start Preparing'),
                   ),
-                if (order.status == 'in_progress')
+                if (status == 'in_progress')
                   ElevatedButton(
                     onPressed: () => ref
                         .read(retailerOrderActionProvider.notifier)
@@ -942,7 +820,7 @@ class _RetailerDashboardScreenState
                     ),
                     child: const Text('Ready for Pickup'),
                   ),
-                if (order.status == 'ready_for_pickup' || order.status == 'in_progress') ...[
+                if (status == 'ready_for_pickup' || status == 'in_progress') ...[
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () => ref
@@ -1002,6 +880,9 @@ class _RetailerDashboardScreenState
   }
 
   Widget _buildApplianceOrderCard(ApplianceOrder order) {
+    final optimisticStatuses = ref.watch(applianceOrderActionProvider);
+    final status = optimisticStatuses[order.id] ?? order.status;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1031,7 +912,7 @@ class _RetailerDashboardScreenState
                     ),
                   ),
                 ),
-                _buildStatusBadge(order.status),
+                _buildStatusBadge(status),
               ],
             ),
             const SizedBox(height: 10),
@@ -1072,7 +953,7 @@ class _RetailerDashboardScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (order.status == 'pending')
+                if (status == 'pending')
                   ElevatedButton(
                     onPressed: () => ref
                         .read(applianceOrderActionProvider.notifier)
@@ -1084,7 +965,7 @@ class _RetailerDashboardScreenState
                     ),
                     child: const Text('Start Preparing'),
                   ),
-                if (order.status == 'in_progress')
+                if (status == 'in_progress')
                   ElevatedButton(
                     onPressed: () => ref
                         .read(applianceOrderActionProvider.notifier)
@@ -1096,7 +977,7 @@ class _RetailerDashboardScreenState
                     ),
                     child: const Text('Ready for Pickup'),
                   ),
-                if (order.status == 'ready_for_pickup' || order.status == 'in_progress') ...[
+                if (status == 'ready_for_pickup' || status == 'in_progress') ...[
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () => ref

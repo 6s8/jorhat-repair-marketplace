@@ -25,7 +25,6 @@ class _CustomerMarketplaceOrdersScreenState
 
   RealtimeChannel? _spareChannel;
   RealtimeChannel? _applianceChannel;
-  Timer? _pollingTimer;
 
   @override
   void initState() {
@@ -33,17 +32,10 @@ class _CustomerMarketplaceOrdersScreenState
     _tabController = TabController(length: 2, vsync: this);
     _loadAll();
     _subscribeRealtime();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (mounted) {
-        _fetchSpareOrders();
-        _fetchApplianceOrders();
-      }
-    });
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
     _tabController.dispose();
     _spareChannel?.unsubscribe();
     _applianceChannel?.unsubscribe();
@@ -62,11 +54,14 @@ class _CustomerMarketplaceOrdersScreenState
 
   Future<void> _fetchSpareOrders() async {
     try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
       final data = await supabase
           .from('spare_part_orders')
           .select()
+          .eq('customer_id', user.id)
           .order('created_at', ascending: false);
-      if (mounted && data is List) {
+      if (mounted) {
         setState(() => _spareOrders =
             data.map((e) => Map<String, dynamic>.from(e as Map)).toList());
       }
@@ -75,11 +70,14 @@ class _CustomerMarketplaceOrdersScreenState
 
   Future<void> _fetchApplianceOrders() async {
     try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
       final data = await supabase
           .from('appliance_orders')
           .select()
+          .eq('customer_id', user.id)
           .order('created_at', ascending: false);
-      if (mounted && data is List) {
+      if (mounted) {
         setState(() => _applianceOrders =
             data.map((e) => Map<String, dynamic>.from(e as Map)).toList());
       }
@@ -87,12 +85,20 @@ class _CustomerMarketplaceOrdersScreenState
   }
 
   void _subscribeRealtime() {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
     _spareChannel = supabase
         .channel('customer-spare-orders')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'spare_part_orders',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'customer_id',
+            value: user.id,
+          ),
           callback: (_) { if (mounted) _fetchSpareOrders(); },
         )
         .subscribe();
@@ -103,6 +109,11 @@ class _CustomerMarketplaceOrdersScreenState
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'appliance_orders',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'customer_id',
+            value: user.id,
+          ),
           callback: (_) { if (mounted) _fetchApplianceOrders(); },
         )
         .subscribe();
@@ -173,7 +184,7 @@ class _CustomerMarketplaceOrdersScreenState
 
   Widget _buildSpareOrdersList() {
     if (_spareOrders.isEmpty) {
-      return _EmptyOrders(
+      return const _EmptyOrders(
         icon: Icons.build_circle_outlined,
         message: 'No spare part orders yet.',
         subtitle: 'Order parts from the Marketplace.',
@@ -192,7 +203,7 @@ class _CustomerMarketplaceOrdersScreenState
 
   Widget _buildApplianceOrdersList() {
     if (_applianceOrders.isEmpty) {
-      return _EmptyOrders(
+      return const _EmptyOrders(
         icon: Icons.kitchen_outlined,
         message: 'No appliance orders yet.',
         subtitle: 'Browse refurbished appliances in the Marketplace.',
@@ -412,7 +423,7 @@ class _SpareOrderCardState extends State<_SpareOrderCard> {
                     children: [
                       Text(
                         _expanded ? 'Hide Timeline' : 'View Timeline',
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600),
@@ -522,7 +533,7 @@ class _ApplianceOrderCardState extends State<_ApplianceOrderCard> {
                     children: [
                       Text(
                         _expanded ? 'Hide Timeline' : 'View Timeline',
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.accent,
                             fontWeight: FontWeight.w600),

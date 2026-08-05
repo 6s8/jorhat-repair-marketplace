@@ -64,7 +64,7 @@ class ProfileNotifier extends StateNotifier<AsyncValue<ProfileModel?>> {
       final saved = await _repo.upsertProfile(newProfile);
       state = AsyncValue.data(saved);
       return saved;
-    } catch (e, st) {
+    } catch (e) {
       // Fallback to local profile object if server table RLS or network fails
       state = AsyncValue.data(newProfile);
       return newProfile;

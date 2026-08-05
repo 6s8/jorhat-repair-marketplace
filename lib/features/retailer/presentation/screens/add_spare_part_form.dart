@@ -58,7 +58,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
   String _selectedRefBrand = 'LG';
   String _selectedCondition = 'Certified Refurbished';
   String _selectedWarranty = '6 Months Shop Warranty';
-  bool _refInStock = true;
+  final bool _refInStock = true;
   bool _isSubmittingRefurbished = false;
 
   // Category & Brand Lists
@@ -488,7 +488,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
               const SizedBox(height: 14),
 
               DropdownButtonFormField<String>(
-                value: _selectedPartCategory,
+                initialValue: _selectedPartCategory,
                 decoration: InputDecoration(
                   labelText: 'Appliance Category *',
                   prefixIcon: const Icon(Icons.category_outlined),
@@ -502,7 +502,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
               const SizedBox(height: 14),
 
               DropdownButtonFormField<String>(
-                value: _selectedPartBrand,
+                initialValue: _selectedPartBrand,
                 decoration: InputDecoration(
                   labelText: 'Brand Compatibility *',
                   prefixIcon: const Icon(Icons.branding_watermark_outlined),
@@ -619,7 +619,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
                 contentPadding: EdgeInsets.zero,
                 title: const Text('In Stock & Ready to Ship', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 value: _partInStock,
-                activeColor: primaryColor,
+                activeThumbColor: primaryColor,
                 onChanged: (val) => setState(() => _partInStock = val),
               ),
               const SizedBox(height: 12),
@@ -716,7 +716,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedRefCategory,
+                      initialValue: _selectedRefCategory,
                       decoration: InputDecoration(
                         labelText: 'Category *',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -730,7 +730,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedRefBrand,
+                      initialValue: _selectedRefBrand,
                       decoration: InputDecoration(
                         labelText: 'Brand *',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -749,7 +749,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedCondition,
+                      initialValue: _selectedCondition,
                       decoration: InputDecoration(
                         labelText: 'Condition Grade *',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -763,7 +763,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedWarranty,
+                      initialValue: _selectedWarranty,
                       decoration: InputDecoration(
                         labelText: 'Warranty Period *',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

@@ -28,7 +28,7 @@ class BrandChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final primary = AppColors.primary;
+    const primary = AppColors.primary;
     final selectedBg = primary.withValues(alpha: 0.08);
 
     return Semantics(

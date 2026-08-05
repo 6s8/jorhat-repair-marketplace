@@ -29,8 +29,6 @@ class CustomerProfileDashboardScreen extends ConsumerStatefulWidget {
 
 class _CustomerProfileDashboardScreenState
     extends ConsumerState<CustomerProfileDashboardScreen> {
-  bool _notificationsEnabled = true;
-
   void _showSettingsModal(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -85,7 +83,7 @@ class _CustomerProfileDashboardScreenState
                     ),
                     subtitle: const Text('Enable dark appearance for night view'),
                     value: isDark,
-                    activeColor: AppColors.accent,
+                    activeThumbColor: AppColors.accent,
                     onChanged: (val) {
                       ref.read(themeModeProvider.notifier).toggleTheme();
                     },
@@ -341,8 +339,9 @@ class _CustomerProfileDashboardScreenState
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () async {
-                                  final initialCenter = LatLng(26.7509, 94.2037);
+                                  const initialCenter = LatLng(26.7509, 94.2037);
                                   final pickedCenter = await MapPickerSheet.show(context, initialCenter);
+                                  if (!context.mounted) return;
                                   if (pickedCenter != null) {
                                     _showAddEditAddressDialog(context, initialLatLng: pickedCenter);
                                   }
@@ -682,7 +681,7 @@ class _CustomerProfileDashboardScreenState
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () async {
-                              final initialCenter = LatLng(26.7509, 94.2037);
+                              const initialCenter = LatLng(26.7509, 94.2037);
                               final pickedCenter = await MapPickerSheet.show(
                                   context, initialCenter);
                               if (pickedCenter != null) {
@@ -899,11 +898,11 @@ class _CustomerProfileDashboardScreenState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
+                      const Row(
                         children: [
-                          const Icon(Icons.payment_rounded, color: Colors.blue),
-                          const SizedBox(width: 8),
-                          const Text(
+                          Icon(Icons.payment_rounded, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text(
                             'Payment Methods & UPI',
                             style: TextStyle(
                               fontSize: 18,
@@ -1075,7 +1074,7 @@ class _CustomerProfileDashboardScreenState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
-                    value: type,
+                    initialValue: type,
                     decoration: const InputDecoration(labelText: 'Payment Type'),
                     items: const [
                       DropdownMenuItem(value: 'UPI', child: Text('UPI ID (Google Pay / PhonePe)')),
@@ -1623,7 +1622,7 @@ class _CustomerProfileDashboardScreenState
             title: const Text('Dark Theme Mode', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             subtitle: const Text('Toggle dark view appearance', style: TextStyle(fontSize: 12)),
             value: isDark,
-            activeColor: AppColors.accent,
+            activeThumbColor: AppColors.accent,
             onChanged: (val) {
               ref.read(themeModeProvider.notifier).toggleTheme();
             },

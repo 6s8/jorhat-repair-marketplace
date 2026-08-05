@@ -72,7 +72,7 @@ class _RetailerProfileDashboardTabState
                     ),
                     subtitle: const Text('Enable dark appearance for retail dashboard'),
                     value: isDark,
-                    activeColor: AppColors.accent,
+                    activeThumbColor: AppColors.accent,
                     onChanged: (val) {
                       ref.read(themeModeProvider.notifier).toggleTheme();
                     },
@@ -231,7 +231,7 @@ class _RetailerProfileDashboardTabState
                       ),
                       Switch(
                         value: _isStoreOpen,
-                        activeColor: AppColors.success,
+                        activeThumbColor: AppColors.success,
                         onChanged: (val) => setState(() => _isStoreOpen = val),
                       ),
                     ],
@@ -311,7 +311,7 @@ class _RetailerProfileDashboardTabState
                   title: const Text('Dark Theme Mode', style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Enable dark appearance for Retailer Hub'),
                   value: isDark,
-                  activeColor: AppColors.accent,
+                  activeThumbColor: AppColors.accent,
                   onChanged: (val) {
                     ref.read(themeModeProvider.notifier).toggleTheme();
                   },

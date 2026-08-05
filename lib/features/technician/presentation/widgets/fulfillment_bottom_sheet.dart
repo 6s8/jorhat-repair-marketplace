@@ -71,129 +71,131 @@ class _FulfillmentBottomSheetState
           ),
           const SizedBox(height: 12),
 
-          // Express Delivery Card
-          InkWell(
-            onTap: () => setState(() => _mode = FulfillmentMode.express),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _mode == FulfillmentMode.express
-                    ? Colors.deepOrange.withValues(alpha: 0.06)
-                    : Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _mode == FulfillmentMode.express
-                      ? Colors.deepOrange
-                      : Colors.grey.shade300,
-                  width: _mode == FulfillmentMode.express ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Radio<FulfillmentMode>(
-                    value: FulfillmentMode.express,
-                    groupValue: _mode,
-                    activeColor: Colors.deepOrange,
-                    onChanged: (val) {
-                      if (val != null) setState(() => _mode = val);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          RadioGroup<FulfillmentMode>(
+            groupValue: _mode,
+            onChanged: (val) {
+              if (val != null) setState(() => _mode = val);
+            },
+            child: Column(
+              children: [
+                // Express Delivery Card
+                InkWell(
+                  onTap: () => setState(() => _mode = FulfillmentMode.express),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _mode == FulfillmentMode.express
+                          ? Colors.deepOrange.withValues(alpha: 0.06)
+                          : Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _mode == FulfillmentMode.express
+                            ? Colors.deepOrange
+                            : Colors.grey.shade300,
+                        width: _mode == FulfillmentMode.express ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
                       children: [
-                        Row(
-                          children: const [
-                            Icon(Icons.local_shipping_rounded,
-                                color: Colors.deepOrange, size: 18),
-                            SizedBox(width: 6),
-                            Text(
-                              'Express Delivery',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
+                        const Radio<FulfillmentMode>(
+                          value: FulfillmentMode.express,
+                          activeColor: Colors.deepOrange,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          job != null
-                              ? 'Deliver directly to ${job.customerName ?? "Customer"}\'s address: ${job.displayAddress}'
-                              : 'Deliver directly to the customer\'s site.',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade600),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.local_shipping_rounded,
+                                      color: Colors.deepOrange, size: 18),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Express Delivery',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                job != null
+                                    ? 'Deliver directly to ${job.customerName ?? "Customer"}\'s address: ${job.displayAddress}'
+                                    : 'Deliver directly to the customer\'s site.',
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Store Pickup Card
-          InkWell(
-            onTap: () => setState(() => _mode = FulfillmentMode.pickup),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _mode == FulfillmentMode.pickup
-                    ? Colors.deepOrange.withValues(alpha: 0.06)
-                    : Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _mode == FulfillmentMode.pickup
-                      ? Colors.deepOrange
-                      : Colors.grey.shade300,
-                  width: _mode == FulfillmentMode.pickup ? 2 : 1,
                 ),
-              ),
-              child: Row(
-                children: [
-                  Radio<FulfillmentMode>(
-                    value: FulfillmentMode.pickup,
-                    groupValue: _mode,
-                    activeColor: Colors.deepOrange,
-                    onChanged: (val) {
-                      if (val != null) setState(() => _mode = val);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                const SizedBox(height: 12),
+
+                // Store Pickup Card
+                InkWell(
+                  onTap: () => setState(() => _mode = FulfillmentMode.pickup),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _mode == FulfillmentMode.pickup
+                          ? Colors.deepOrange.withValues(alpha: 0.06)
+                          : Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _mode == FulfillmentMode.pickup
+                            ? Colors.deepOrange
+                            : Colors.grey.shade300,
+                        width: _mode == FulfillmentMode.pickup ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
                       children: [
-                        Row(
-                          children: const [
-                            Icon(Icons.store_rounded,
-                                color: Colors.deepOrange, size: 18),
-                            SizedBox(width: 6),
-                            Text(
-                              'Store Pickup',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
+                        const Radio<FulfillmentMode>(
+                          value: FulfillmentMode.pickup,
+                          activeColor: Colors.deepOrange,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Reserve part for counter pickup at retailer shop in Jorhat.',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade600),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.store_rounded,
+                                      color: Colors.deepOrange, size: 18),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Store Pickup',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Reserve part for counter pickup at retailer shop in Jorhat.',
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
 

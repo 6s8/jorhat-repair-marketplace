@@ -47,7 +47,7 @@ class _ComplaintImageViewerState extends State<ComplaintImageViewer> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.6),
+        backgroundColor: Colors.black.withValues(alpha: 0.6),
         foregroundColor: Colors.white,
         title: Text(
           'Complaint Photo (${_currentIndex + 1} of ${widget.imageUrls.length})',

@@ -10,25 +10,25 @@ final retailerOrdersProvider = StreamProvider<List<RetailerOrder>>((ref) {
   return repo.watchOrders();
 });
 
-class RetailerOrderActionNotifier extends Notifier<bool> {
+class RetailerOrderActionNotifier extends Notifier<Map<String, String>> {
   @override
-  bool build() => false;
+  Map<String, String> build() => {};
 
   Future<void> updateStatus(String orderId, String newStatus) async {
-    state = true;
+    final oldState = state;
+    state = {...state, orderId: newStatus};
     try {
       final repo = ref.read(retailerOrdersRepositoryProvider);
       await repo.updateOrderStatus(orderId, newStatus);
     } catch (e) {
+      state = oldState;
       rethrow;
-    } finally {
-      state = false;
     }
   }
 }
 
 final retailerOrderActionProvider =
-    NotifierProvider<RetailerOrderActionNotifier, bool>(
+    NotifierProvider<RetailerOrderActionNotifier, Map<String, String>>(
   () => RetailerOrderActionNotifier(),
 );
 
@@ -38,24 +38,24 @@ final applianceOrdersProvider = StreamProvider<List<ApplianceOrder>>((ref) {
   return repo.watchOrders();
 });
 
-class ApplianceOrderActionNotifier extends Notifier<bool> {
+class ApplianceOrderActionNotifier extends Notifier<Map<String, String>> {
   @override
-  bool build() => false;
+  Map<String, String> build() => {};
 
   Future<void> updateStatus(String orderId, String newStatus) async {
-    state = true;
+    final oldState = state;
+    state = {...state, orderId: newStatus};
     try {
       final repo = ref.read(applianceOrdersRepositoryProvider);
       await repo.updateOrderStatus(orderId, newStatus);
     } catch (e) {
+      state = oldState;
       rethrow;
-    } finally {
-      state = false;
     }
   }
 }
 
 final applianceOrderActionProvider =
-    NotifierProvider<ApplianceOrderActionNotifier, bool>(
+    NotifierProvider<ApplianceOrderActionNotifier, Map<String, String>>(
   () => ApplianceOrderActionNotifier(),
 );

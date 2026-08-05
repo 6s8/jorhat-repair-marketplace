@@ -45,7 +45,7 @@ class AuthRepository {
 
   /// Triggers Google OAuth Sign-In via Supabase.
   Future<bool> signInWithGoogle() async {
-    final String? redirectUrl = kIsWeb
+    final String redirectUrl = kIsWeb
         ? Uri.base.origin
         : 'io.supabase.jorhatrepair://login-callback/';
 

@@ -35,7 +35,7 @@ List<Map<String, dynamic>> _sortJobsIsolate(Map<String, dynamic> params) {
   final double userLat = params['lat'] as double;
   final double userLng = params['lng'] as double;
 
-  final Distance distanceCalc = const Distance();
+  const Distance distanceCalc = Distance();
 
   jobs.sort((a, b) {
     final double latA = (a['latitude'] as num?)?.toDouble() ?? userLat;

@@ -115,10 +115,9 @@ class _ActiveJobsTabState extends ConsumerState<ActiveJobsTab> {
                           final err = await ref
                               .read(technicianActiveJobsProvider.notifier)
                               .verifyArrivalOtp(job.id, otp);
-                          if (!mounted) return;
+                          if (!mounted || !ctx.mounted) return;
                           try { setModalState(() => isSubmitting = false); } catch (_) {}
                           if (err != null) {
-                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(err),
@@ -127,7 +126,6 @@ class _ActiveJobsTabState extends ConsumerState<ActiveJobsTab> {
                             );
                           } else {
                             Navigator.pop(ctx);
-                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Arrival verified! Job is In Progress.'),
@@ -229,10 +227,9 @@ class _ActiveJobsTabState extends ConsumerState<ActiveJobsTab> {
                                 otp,
                                 amount,
                               );
-                          if (!mounted) return;
+                          if (!mounted || !ctx.mounted) return;
                           try { setModalState(() => isSubmitting = false); } catch (_) {}
                           if (err != null) {
-                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(err),
@@ -241,7 +238,6 @@ class _ActiveJobsTabState extends ConsumerState<ActiveJobsTab> {
                             );
                           } else {
                             Navigator.pop(ctx);
-                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(

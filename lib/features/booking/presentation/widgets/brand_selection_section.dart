@@ -219,7 +219,7 @@ class _ModelNumberField extends StatelessWidget {
           autocorrect: false,
           onChanged: onChanged,
           // Allow alphanumeric + common separators; no over-restriction
-          inputFormatters: [],
+          inputFormatters: const [],
           decoration: InputDecoration(
             labelText: 'Model Number',
             hintText: 'e.g. RT28T3022S8 (Optional)',

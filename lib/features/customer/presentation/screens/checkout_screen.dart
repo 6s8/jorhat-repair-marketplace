@@ -144,7 +144,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -187,11 +187,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Delivery Fee:'),
-                        const Text('₹50'),
+                        Text('Delivery Fee:'),
+                        Text('₹50'),
                       ],
                     ),
                     const Divider(height: 16),

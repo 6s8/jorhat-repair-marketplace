@@ -1,23 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../core/widgets/app_scroll_behavior.dart';
 
 import '../core/theme/app_colors.dart';
-import '../core/theme/app_theme.dart';
-import '../core/theme/theme_provider.dart';
 import '../core/widgets/modern_floating_nav_bar.dart';
-import '../features/auth/presentation/auth_gate.dart';
 import '../features/technician/presentation/providers/technician_profile_provider.dart';
 import '../features/technician/presentation/screens/active_jobs_tab.dart';
 import '../features/technician/presentation/screens/earnings_tab.dart';
 import '../features/technician/presentation/screens/marketplace_tab.dart';
 import '../features/technician/presentation/screens/pending_jobs_tab.dart';
-import '../features/technician/presentation/screens/radar_settings_screen.dart';
 import '../features/technician/presentation/screens/technician_dashboard_tab.dart';
-import '../features/technician/presentation/screens/technician_profile_screen.dart';
-import '../features/technician/presentation/screens/job_detail_screen.dart';
-import '../models/job_model.dart';
 
 class TechnicianHomeScreen extends ConsumerStatefulWidget {
   const TechnicianHomeScreen({super.key});
@@ -91,8 +83,12 @@ class _TechnicianHomeScreenState extends ConsumerState<TechnicianHomeScreen> {
                 IconButton(
                   icon: const Icon(Icons.tune_rounded),
                   tooltip: 'Radar Settings',
-                  onPressed: () => context.push('/radar-settings'),
+                  onPressed: () => context.push('/technician/radar-settings'),
                 ),
+                if (_currentIndex == 2)
+                  AnimatedOrdersButton(
+                    onTap: () => context.push('/technician/orders'),
+                  ),
                 const SizedBox(width: 4),
               ],
             ),
@@ -141,51 +137,99 @@ class _TechnicianHomeScreenState extends ConsumerState<TechnicianHomeScreen> {
   }
 }
 
-final technicianRouter = GoRouter(
-  initialLocation: '/',
-  routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const TechnicianHomeScreen(),
-    ),
-    GoRoute(
-      path: '/radar-settings',
-      builder: (context, state) => const RadarSettingsScreen(),
-    ),
-    GoRoute(
-      path: '/profile',
-      builder: (context, state) => const TechnicianProfileScreen(),
-    ),
-    GoRoute(
-      path: '/job-detail',
-      builder: (context, state) {
-        final job = state.extra is Job ? state.extra as Job : null;
-        if (job == null) return const Scaffold(body: Center(child: Text('Job not found')));
-        return JobDetailScreen(job: job);
-      },
-    ),
-  ],
-);
+class AnimatedOrdersButton extends StatefulWidget {
+  final VoidCallback onTap;
 
-class TechnicianRootApp extends ConsumerWidget {
-  const TechnicianRootApp({super.key});
+  const AnimatedOrdersButton({super.key, required this.onTap});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
+  State<AnimatedOrdersButton> createState() => _AnimatedOrdersButtonState();
+}
 
-    return MaterialApp.router(
-      title: 'Fixly Tech',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.getTheme(),
-      darkTheme: AppTheme.getDarkTheme(),
-      themeMode: themeMode,
-      scrollBehavior: const AppStretchScrollBehavior(),
-      routerConfig: technicianRouter,
+class _AnimatedOrdersButtonState extends State<AnimatedOrdersButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+      lowerBound: 0.0,
+      upperBound: 0.12,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
       builder: (context, child) {
-        return AuthGate(
-          targetRole: 'technician',
-          child: child ?? const SizedBox.shrink(),
+        return Transform.scale(
+          scale: 1.0 - _controller.value,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _handleTap,
+                borderRadius: BorderRadius.circular(20),
+                splashColor: Colors.white.withValues(alpha: 0.4),
+                highlightColor: Colors.white.withValues(alpha: 0.2),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.shopping_bag_outlined,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'My Orders',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );

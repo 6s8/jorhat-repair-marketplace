@@ -84,7 +84,7 @@ class CartScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withValues(alpha: 0.04),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -177,7 +177,7 @@ class CartScreen extends ConsumerWidget {
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 10,
                         offset: const Offset(0, -4),
                       ),
@@ -194,11 +194,11 @@ class CartScreen extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Row(
+                      const Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Local Delivery Fee:'),
-                          const Text('₹50', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Local Delivery Fee:'),
+                          Text('₹50', style: TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                       const Divider(height: 16),

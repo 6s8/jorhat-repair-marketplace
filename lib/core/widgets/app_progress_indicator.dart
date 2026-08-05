@@ -45,7 +45,7 @@ class AppProgressIndicator extends StatelessWidget {
                   key: const ValueKey('loading'),
                   width: size,
                   height: size,
-                  child: CircularProgressIndicator(
+                  child: const CircularProgressIndicator(
                     strokeWidth: 2.5,
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
                   ),

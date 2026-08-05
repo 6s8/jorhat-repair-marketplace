@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../providers/job_repository_provider.dart';
 import '../models/job_create_request.dart';
-import '../pricing/repair_pricing.dart';
 import '../state/booking_state.dart';
 
 /// Riverpod Controller managing customer repair booking flow state and actions.

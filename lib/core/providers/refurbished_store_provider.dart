@@ -1,24 +1,45 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 
 import '../../features/retailer/models/refurbished_appliance_model.dart';
 import '../supabase/supabase_client.dart';
 
 class RefurbishedStoreNotifier extends Notifier<List<RefurbishedAppliance>> {
   static const String _storageKey = 'assamparts_refurbished_appliances_v3';
-  StreamSubscription? _realtimeSub;
 
   @override
   List<RefurbishedAppliance> build() {
-    final initial = _loadInitialAppliances();
-    _initSupabaseSync();
+    final initial = _getFallbackCatalog();
+    _initAsync();
     return initial;
+  }
+
+  Future<void> _initAsync() async {
+    await _loadFromPrefs();
+    _initSupabaseSync();
+  }
+
+  Future<void> _loadFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_storageKey);
+      if (raw != null && raw.isNotEmpty) {
+        final List decoded = jsonDecode(raw) as List;
+        final items = decoded
+            .map((e) =>
+                RefurbishedAppliance.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+        if (items.isNotEmpty) {
+          state = items;
+          return;
+        }
+      }
+    } catch (_) {}
+    // Persist defaults if nothing found
+    _persist(state);
   }
 
   List<RefurbishedAppliance> _getFallbackCatalog() {
@@ -95,35 +116,8 @@ class RefurbishedStoreNotifier extends Notifier<List<RefurbishedAppliance>> {
     ];
   }
 
-  List<RefurbishedAppliance> _loadInitialAppliances() {
-    try {
-      if (kIsWeb) {
-        final raw = html.window.localStorage[_storageKey];
-        if (raw != null && raw.isNotEmpty) {
-          final List decoded = jsonDecode(raw) as List;
-          final items = decoded
-              .map((e) =>
-                  RefurbishedAppliance.fromJson(Map<String, dynamic>.from(e as Map)))
-              .toList();
-          if (items.isNotEmpty) return items;
-        }
-      }
-    } catch (_) {}
-
-    final seeded = _getFallbackCatalog();
-    _persistToWeb(seeded);
-    return seeded;
-  }
-
-  void _initSupabaseSync() async {
+  void _initSupabaseSync() {
     _fetchFromSupabase();
-
-    try {
-      _realtimeSub = supabase
-          .from('jobs')
-          .stream(primaryKey: ['id'])
-          .listen((_) => _fetchFromSupabase(), onError: (_) {});
-    } catch (_) {}
   }
 
   Future<void> _fetchFromSupabase() async {
@@ -154,16 +148,15 @@ class RefurbishedStoreNotifier extends Notifier<List<RefurbishedAppliance>> {
 
       final merged = map.values.toList();
       state = merged;
-      _persistToWeb(merged);
+      _persist(merged);
     } catch (_) {}
   }
 
-  void _persistToWeb(List<RefurbishedAppliance> items) {
+  Future<void> _persist(List<RefurbishedAppliance> items) async {
     try {
-      if (kIsWeb) {
-        final encoded = jsonEncode(items.map((i) => i.toJson()).toList());
-        html.window.localStorage[_storageKey] = encoded;
-      }
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = jsonEncode(items.map((i) => i.toJson()).toList());
+      await prefs.setString(_storageKey, encoded);
     } catch (_) {}
   }
 
@@ -190,9 +183,8 @@ class RefurbishedStoreNotifier extends Notifier<List<RefurbishedAppliance>> {
       updated = [validItem, ...state];
     }
     state = updated;
-    _persistToWeb(updated);
+    _persist(updated);
 
-    // Save to Supabase jobs table
     try {
       final payload = {
         'id': validId,
@@ -212,7 +204,7 @@ class RefurbishedStoreNotifier extends Notifier<List<RefurbishedAppliance>> {
   Future<void> removeAppliance(String id) async {
     final updated = state.where((i) => i.id != id).toList();
     state = updated;
-    _persistToWeb(updated);
+    _persist(updated);
 
     try {
       await supabase.from('jobs').delete().eq('id', id);
