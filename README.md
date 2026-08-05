@@ -1,17 +1,61 @@
-# jorhat_repair_marketplace
+# 🛠️ Fixly — Assam Repair & Parts Hub Marketplace App
 
-A new Flutter project.
+Fixly is a comprehensive, production-grade Flutter application connecting Customers, Technicians, and Spare Parts Retailers across Assam. Built with clean architecture, Riverpod state management, Supabase authentication & database, and GoRouter deep linking.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🌐 Live Web Application & Download Links
 
-A few resources to get you started if this is your first Flutter project:
+| Resource | Link / Access |
+| :--- | :--- |
+| 🚀 **Live Web App (GitHub Pages)** | [https://6s8.github.io/jorhat-repair-marketplace/](https://6s8.github.io/jorhat-repair-marketplace/) |
+| 📱 **Unified Fixly App APK (All Roles)** | [Download Fixly APK (v1.0.0)](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly.apk) |
+| 🛒 **Fixly Customer App APK** | [Download Customer APK (v1.0.0)](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly_customer.apk) |
+| 🔧 **Fixly Technician App APK** | [Download Technician APK (v1.0.0)](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly_technician.apk) |
+| 🏬 **Fixly Retailer App APK** | [Download Retailer APK (v1.0.0)](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly_retailer.apk) |
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## ⚡ Features & Architecture
+
+### 🔑 Unified Single Entry Point Architecture
+- **Single Entry Point (`lib/main.dart`)**: Consolidates all role-based applications into one clean, maintainable codebase.
+- **Centralized `AuthGate`**: Single-source-of-truth profile role lookup via Supabase `profiles` table.
+- **Dynamic Role Routing**:
+  - `Customer` ➔ `/customer` (Booking, Marketplace, Order History, Profile)
+  - `Technician` ➔ `/technician` (Job Feed, Map View, Active Jobs, Earnings)
+  - `Retailer` ➔ `/retailer` (Inventory, Refurbished Store, Orders)
+  - `New/Unassigned User` ➔ `/role-selection` (Role Onboarding)
+
+### 📲 Cross-Platform Compatibility
+- Runs natively on **Android (APK)**, **iOS**, and **Web (GitHub Pages)**.
+- Uses `shared_preferences` for cross-platform local storage.
+- Full OAuth and path strategy routing support via `usePathUrlStrategy()`.
+
+---
+
+## 🚀 Building & Running Locally
+
+### Prerequisites
+- Flutter SDK (3.24.0 or higher)
+- Android SDK (for mobile builds)
+
+### Installation & Run
+
+```bash
+# Clone the repository
+git clone https://github.com/6s8/jorhat-repair-marketplace.git
+cd jorhat-repair-marketplace
+
+# Install dependencies
+flutter pub get
+
+# Run unified web app locally
+flutter run -d chrome
+
+# Build Web release for GitHub Pages
+flutter build web --release --base-href "/jorhat-repair-marketplace/"
+
+# Build Release APK
+flutter build apk --release
+```
