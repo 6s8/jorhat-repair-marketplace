@@ -1,4 +1,4 @@
-name: Deploy Fixly Web & Release APKs
+name: Deploy Fixly Web to GitHub Pages
 
 on:
   push:
@@ -33,39 +33,32 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter Web
+        run: flutter build web --release --base-href "/Services-repair-marketplace/"
+
+      - name: Create .nojekyll
+        run: touch build/web/.nojekyll
+
+      - name: Create 404.html for SPA routing
+        run: cp build/web/index.html build/web/404.html
+
+      - name: Verify build output
         run: |
-          flutter build web --release --base-href "/jorhat-repair-marketplace/"
-          cp build/web/index.html build/web/404.html
+          echo "--- Build output contents ---"
+          ls -la build/web/
+          echo "--- Verifying index.html exists ---"
+          test -f build/web/index.html && echo "✅ index.html found" || (echo "❌ index.html missing" && exit 1)
+          test -f build/web/404.html && echo "✅ 404.html found" || (echo "❌ 404.html missing" && exit 1)
+          test -f build/web/.nojekyll && echo "✅ .nojekyll found" || (echo "❌ .nojekyll missing" && exit 1)
+          test -f build/web/flutter_bootstrap.js && echo "✅ flutter_bootstrap.js found" || (echo "❌ flutter_bootstrap.js missing" && exit 1)
+          test -f build/web/main.dart.js && echo "✅ main.dart.js found" || (echo "❌ main.dart.js missing" && exit 1)
+          echo "--- Checking base href in index.html ---"
+          grep 'base href' build/web/index.html
 
       - name: Deploy to GitHub Pages
-        uses: PeaceIris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
           publish_branch: gh-pages
           force_orphan: true
-
-      - name: Create GitHub Release with APKs
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/heads/main')
-        with:
-          name: "Fixly App v1.0.0 - Android & Web"
-          tag_name: "v1.0.0"
-          files: |
-            apks/fixly.apk
-            apks/fixly_customer.apk
-            apks/fixly_technician.apk
-            apks/fixly_retailer.apk
-          body: |
-            ### 📱 Fixly - Assam Repair & Parts Hub App Release v1.0.0
-
-            #### 📦 Download Android APKs:
-            - **[Unified Fixly App (All Roles)](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly.apk)**
-            - **[Fixly Customer App](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly_customer.apk)**
-            - **[Fixly Technician App](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly_technician.apk)**
-            - **[Fixly Retailer App](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly_retailer.apk)**
-
-            #### 🌐 Web Application:
-            - **Live Web App**: [https://6s8.github.io/jorhat-repair-marketplace/](https://6s8.github.io/jorhat-repair-marketplace/)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          enable_jekyll: false

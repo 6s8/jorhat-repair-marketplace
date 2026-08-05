@@ -8,11 +8,11 @@ Fixly is a comprehensive, production-grade Flutter application connecting Custom
 
 | Resource | Link / Access |
 | :--- | :--- |
-| 🚀 **Live Web App (GitHub Pages)** | [https://6s8.github.io/jorhat-repair-marketplace/](https://6s8.github.io/jorhat-repair-marketplace/) |
-| 📱 **Unified Fixly App APK (All Roles)** | [Download Fixly APK (v1.0.0)](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly.apk) |
-| 🛒 **Fixly Customer App APK** | [Download Customer APK (v1.0.0)](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly_customer.apk) |
-| 🔧 **Fixly Technician App APK** | [Download Technician APK (v1.0.0)](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly_technician.apk) |
-| 🏬 **Fixly Retailer App APK** | [Download Retailer APK (v1.0.0)](https://github.com/6s8/jorhat-repair-marketplace/releases/download/v1.0.0/fixly_retailer.apk) |
+| 🚀 **Live Web App (GitHub Pages)** | [https://6s8.github.io/Services-repair-marketplace/](https://6s8.github.io/Services-repair-marketplace/) |
+| 📱 **Unified Fixly App APK (All Roles)** | [Download Fixly APK (v1.0.0)](https://github.com/6s8/Services-repair-marketplace/releases/download/v1.0.0/fixly.apk) |
+| 🛒 **Fixly Customer App APK** | [Download Customer APK (v1.0.0)](https://github.com/6s8/Services-repair-marketplace/releases/download/v1.0.0/fixly_customer.apk) |
+| 🔧 **Fixly Technician App APK** | [Download Technician APK (v1.0.0)](https://github.com/6s8/Services-repair-marketplace/releases/download/v1.0.0/fixly_technician.apk) |
+| 🏬 **Fixly Retailer App APK** | [Download Retailer APK (v1.0.0)](https://github.com/6s8/Services-repair-marketplace/releases/download/v1.0.0/fixly_retailer.apk) |
 
 ---
 
@@ -44,8 +44,8 @@ Fixly is a comprehensive, production-grade Flutter application connecting Custom
 
 ```bash
 # Clone the repository
-git clone https://github.com/6s8/jorhat-repair-marketplace.git
-cd jorhat-repair-marketplace
+git clone https://github.com/6s8/Services-repair-marketplace.git
+cd Services-repair-marketplace
 
 # Install dependencies
 flutter pub get
@@ -54,7 +54,7 @@ flutter pub get
 flutter run -d chrome
 
 # Build Web release for GitHub Pages
-flutter build web --release --base-href "/jorhat-repair-marketplace/"
+flutter build web --release --base-href "/Services-repair-marketplace/"
 
 # Build Release APK
 flutter build apk --release
