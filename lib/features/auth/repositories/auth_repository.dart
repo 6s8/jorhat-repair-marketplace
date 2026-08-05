@@ -45,8 +45,12 @@ class AuthRepository {
 
   /// Triggers Google OAuth Sign-In via Supabase.
   Future<bool> signInWithGoogle() async {
+    // On web: use the full current URL base (origin + path) so that Supabase
+    // redirects back to the correct GitHub Pages sub-path, not just the origin.
+    // Uri.base on GitHub Pages = "https://6s8.github.io/Services-repair-marketplace/"
+    // Uri.base.origin alone = "https://6s8.github.io" → causes 404 after OAuth.
     final String redirectUrl = kIsWeb
-        ? Uri.base.origin
+        ? '${Uri.base.origin}${Uri.base.path}'
         : 'io.supabase.jorhatrepair://login-callback/';
 
     final response = await _client.auth.signInWithOAuth(
@@ -71,7 +75,9 @@ class AuthRepository {
             .eq('id', userId)
             .maybeSingle();
         return res;
-      }).timeout(const Duration(milliseconds: 800));
+      // Increased to 6s: cold Supabase starts on web can take 2-3s easily.
+      // 800ms was causing false-null returns → users stuck on RoleSelectionScreen.
+      }).timeout(const Duration(milliseconds: 6000));
 
       if (response == null) return null;
       return ProfileModel.fromJson(response);
