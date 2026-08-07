@@ -21,7 +21,12 @@ class CustomerCategoryPage extends ConsumerWidget {
     final mutedTextColor = Theme.of(context).textTheme.bodySmall?.color ?? AppColors.textMuted;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Bottom padding set to 100px for floating navbar clearance
+      padding: EdgeInsets.fromLTRB(
+        16, 
+        16, 
+        16, 
+        MediaQuery.viewPaddingOf(context).bottom + 100, // Bottom padding for floating navbar clearance + safe area
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -35,6 +40,8 @@ class CustomerCategoryPage extends ConsumerWidget {
                   children: [
                     Text(
                       'Select Appliance',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: primaryColor,
@@ -43,6 +50,8 @@ class CustomerCategoryPage extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Choose repair category to book an expert in Jorhat',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
                         color: mutedTextColor,

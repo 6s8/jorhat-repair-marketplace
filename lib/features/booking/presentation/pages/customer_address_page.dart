@@ -80,7 +80,12 @@ class _CustomerAddressPageState extends ConsumerState<CustomerAddressPage> {
     final controller = ref.read(bookingControllerProvider.notifier);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.fromLTRB(
+        20.0,
+        20.0,
+        20.0,
+        MediaQuery.viewInsetsOf(context).bottom + MediaQuery.viewPaddingOf(context).bottom + 20.0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

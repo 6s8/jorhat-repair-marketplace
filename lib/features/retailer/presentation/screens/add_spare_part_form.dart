@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/providers/refurbished_store_provider.dart';
 import '../../../../core/supabase/supabase_client.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/image_picker_widget.dart';
 import '../../controller/retailer_controller.dart';
 import '../../models/refurbished_appliance_model.dart';
 import '../../models/spare_part_model.dart';
@@ -39,7 +40,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
   final _techPriceController = TextEditingController();
   final _stockQtyController = TextEditingController(text: '25');
   final _partNumberController = TextEditingController();
-  final _partImageUrlController = TextEditingController();
+  String? _partImageUrl;
 
   String _selectedPartCategory = 'AC';
   String _selectedPartBrand = 'Universal / Multi-Brand';
@@ -52,7 +53,7 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
   final _refOrigPriceController = TextEditingController();
   final _refDescController = TextEditingController();
   final _refPhoneController = TextEditingController(text: '+919876543210');
-  final _refImageUrlController = TextEditingController();
+  String? _refImageUrl;
 
   String _selectedRefCategory = 'AC';
   String _selectedRefBrand = 'LG';
@@ -120,14 +121,12 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
     _techPriceController.dispose();
     _stockQtyController.dispose();
     _partNumberController.dispose();
-    _partImageUrlController.dispose();
 
     _refTitleController.dispose();
     _refCustPriceController.dispose();
     _refOrigPriceController.dispose();
     _refDescController.dispose();
     _refPhoneController.dispose();
-    _refImageUrlController.dispose();
     super.dispose();
   }
 
@@ -188,9 +187,8 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
       final retailerId = user?.id ?? 'guest_retailer_001';
       final newId = const Uuid().v4();
 
-      final customUrl = _partImageUrlController.text.trim();
-      final finalImageUrl = customUrl.isNotEmpty
-          ? customUrl
+      final finalImageUrl = (_partImageUrl != null && _partImageUrl!.isNotEmpty)
+          ? _partImageUrl!
           : _getDefaultImage(_selectedPartCategory);
 
       final newPart = SparePart(
@@ -240,7 +238,6 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
       _partNameController.clear();
       _custPriceController.clear();
       _techPriceController.clear();
-      _partImageUrlController.clear();
 
       widget.onSuccessNavigateToInventory();
     } finally {
@@ -259,9 +256,8 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
       final retailerId = user?.id ?? 'guest_retailer_001';
       final newId = const Uuid().v4();
 
-      final customUrl = _refImageUrlController.text.trim();
-      final finalImageUrl = customUrl.isNotEmpty
-          ? customUrl
+      final finalImageUrl = (_refImageUrl != null && _refImageUrl!.isNotEmpty)
+          ? _refImageUrl!
           : _getDefaultImage(_selectedRefCategory);
 
       final newAppliance = RefurbishedAppliance(
@@ -301,7 +297,6 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
       _refCustPriceController.clear();
       _refOrigPriceController.clear();
       _refDescController.clear();
-      _refImageUrlController.clear();
 
       widget.onSuccessNavigateToRefurbished();
     } finally {
@@ -312,9 +307,10 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 110;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding),
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 740),
@@ -624,13 +620,17 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
               ),
               const SizedBox(height: 12),
 
-              TextFormField(
-                controller: _partImageUrlController,
-                decoration: InputDecoration(
-                  labelText: 'Custom Image URL (Optional)',
-                  prefixIcon: const Icon(Icons.image_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+              const Text(
+                'Product Image (Optional)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 6),
+              ImagePickerWidget(
+                onImageSelected: (url) {
+                  setState(() => _partImageUrl = url);
+                },
+                initialImageUrl: _partImageUrl,
+                hint: 'Add spare part photo from gallery',
               ),
               const SizedBox(height: 24),
 
@@ -858,13 +858,17 @@ class _AddSparePartFormState extends ConsumerState<AddSparePartForm> {
               ),
               const SizedBox(height: 14),
 
-              TextFormField(
-                controller: _refImageUrlController,
-                decoration: InputDecoration(
-                  labelText: 'Custom Image URL (Optional)',
-                  prefixIcon: const Icon(Icons.image_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+              const Text(
+                'Appliance Image (Optional)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 6),
+              ImagePickerWidget(
+                onImageSelected: (url) {
+                  setState(() => _refImageUrl = url);
+                },
+                initialImageUrl: _refImageUrl,
+                hint: 'Add appliance photo from gallery',
               ),
               const SizedBox(height: 24),
 

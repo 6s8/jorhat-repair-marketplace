@@ -385,24 +385,28 @@ class _CustomerStoreScreenState extends ConsumerState<CustomerStoreScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.white10 : Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              part.category.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: mutedTextColor,
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                part.category.toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: mutedTextColor,
+                                ),
                               ),
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 3),
@@ -444,67 +448,33 @@ class _CustomerStoreScreenState extends ConsumerState<CustomerStoreScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '₹${part.customerPrice.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: primaryColor,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              OutlinedButton(
-                                onPressed: part.inStock ? () {
-                                  ref.read(cartProvider.notifier).addToCart(part);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Added "${part.partName}" to Cart'),
-                                      duration: const Duration(seconds: 2),
+                      // Price + action buttons - responsive wrap on small screens
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isNarrow = constraints.maxWidth < 240;
+                          return isNarrow
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '\u20b9${part.customerPrice.toStringAsFixed(0)}',
+                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
                                     ),
-                                  );
-                                } : null,
-                                style: OutlinedButton.styleFrom(
-                                  visualDensity: VisualDensity.compact,
-                                  side: BorderSide(color: part.inStock ? primaryColor : Colors.grey),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: Text(
-                                  part.inStock ? '+ Cart' : 'Out of Stock',
-                                  style: TextStyle(
-                                    color: part.inStock ? primaryColor : Colors.grey,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              ElevatedButton(
-                                onPressed: part.inStock ? () {
-                                  ref.read(cartProvider.notifier).addToCart(part);
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const CartScreen(),
+                                    const SizedBox(height: 8),
+                                    _buildActionButtons(context, part, primaryColor),
+                                  ],
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '\u20b9${part.customerPrice.toStringAsFixed(0)}',
+                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
                                     ),
-                                  );
-                                } : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: part.inStock ? AppColors.accent : Colors.grey,
-                                  foregroundColor: part.inStock ? AppColors.text : Colors.white,
-                                  visualDensity: VisualDensity.compact,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: Text(part.inStock ? 'Buy Now' : 'Out of Stock'),
-                              ),
-                            ],
-                          ),
-                        ],
+                                     _buildActionButtons(context, part, primaryColor),
+                                   ],
+                                 );
+                        },
                       ),
                     ],
                   ),
@@ -514,6 +484,53 @@ class _CustomerStoreScreenState extends ConsumerState<CustomerStoreScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, SparePart part, Color primaryColor) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        OutlinedButton(
+          onPressed: part.inStock ? () {
+            ref.read(cartProvider.notifier).addToCart(part);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Added "${part.partName}" to Cart'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          } : null,
+          style: OutlinedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            side: BorderSide(color: part.inStock ? primaryColor : Colors.grey),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Text(
+            part.inStock ? '+ Cart' : 'Out of Stock',
+            style: TextStyle(
+              color: part.inStock ? primaryColor : Colors.grey,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        ElevatedButton(
+          onPressed: part.inStock ? () {
+            ref.read(cartProvider.notifier).addToCart(part);
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CartScreen()),
+            );
+          } : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: part.inStock ? AppColors.accent : Colors.grey,
+            foregroundColor: part.inStock ? AppColors.text : Colors.white,
+            visualDensity: VisualDensity.compact,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Text(part.inStock ? 'Buy Now' : 'Out of Stock'),
+        ),
+      ],
     );
   }
 }

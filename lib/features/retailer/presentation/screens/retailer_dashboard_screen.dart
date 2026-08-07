@@ -111,34 +111,42 @@ class _RetailerDashboardScreenState
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final updatedPart = part.copyWith(
-                    partName: editNameCtrl.text.trim(),
-                    brand: editBrandCtrl.text.trim().isEmpty
-                        ? 'Generic'
-                        : editBrandCtrl.text.trim(),
-                    imageUrl: editImgCtrl.text.trim().isEmpty
-                        ? null
-                        : editImgCtrl.text.trim(),
-                    category: editCategory,
-                    customerPrice: double.tryParse(editCustPriceCtrl.text) ??
-                        part.customerPrice,
-                    technicianPrice: double.tryParse(editTechPriceCtrl.text) ??
-                        part.technicianPrice,
-                    inStock: editInStock,
-                    updatedAt: DateTime.now(),
-                  );
-                  ref
-                      .read(retailerControllerProvider.notifier)
-                      .updatePart(updatedPart);
-                  Navigator.pop(context);
-                },
-                child: const Text('Save Changes'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final updatedPart = part.copyWith(
+                          partName: editNameCtrl.text.trim(),
+                          brand: editBrandCtrl.text.trim().isEmpty
+                              ? 'Generic'
+                              : editBrandCtrl.text.trim(),
+                          imageUrl: editImgCtrl.text.trim().isEmpty
+                              ? null
+                              : editImgCtrl.text.trim(),
+                          category: editCategory,
+                          customerPrice: double.tryParse(editCustPriceCtrl.text) ??
+                              part.customerPrice,
+                          technicianPrice: double.tryParse(editTechPriceCtrl.text) ??
+                              part.technicianPrice,
+                          inStock: editInStock,
+                          updatedAt: DateTime.now(),
+                        );
+                        ref
+                            .read(retailerControllerProvider.notifier)
+                            .updatePart(updatedPart);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Save Changes'),
+                    ),
+                  ),
+                ],
               ),
             ],
           );
@@ -371,48 +379,48 @@ class _RetailerDashboardScreenState
               ),
               child: const Icon(Icons.build_rounded, color: AppColors.primary),
             ),
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    part.partName,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color:
-                        part.inStock ? Colors.green.shade50 : Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    part.displayStockStatus,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          part.inStock ? AppColors.success : AppColors.error,
-                    ),
-                  ),
-                ),
-              ],
+            title: Text(
+              part.partName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text('${part.category} • Brand: ${part.brand}',
-                    style: const TextStyle(fontSize: 12)),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: part.inStock ? Colors.green.shade50 : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        part.displayStockStatus,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: part.inStock ? AppColors.success : AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text(
-                  'Customer Price: ₹${part.customerPrice.toStringAsFixed(0)} | Wholesale: ₹${part.technicianPrice.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
+                  '${part.category} • Brand: ${part.brand}',
+                  style: const TextStyle(fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Customer: ₹${part.customerPrice.toStringAsFixed(0)} | Wholesale: ₹${part.technicianPrice.toStringAsFixed(0)}',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -486,23 +494,27 @@ class _RetailerDashboardScreenState
                     : const Icon(Icons.kitchen_rounded, color: AppColors.accent),
               ),
             ),
-            title: Row(
+            title: Text(
+              item.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    item.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
+                const SizedBox(height: 4),
+                // Condition badge moved here from title
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.secondary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     item.condition,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -510,24 +522,19 @@ class _RetailerDashboardScreenState
                     ),
                   ),
                 ),
-              ],
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
                 const SizedBox(height: 4),
                 Text(
                   '${item.brand} • ${item.category} | ${item.warrantyPeriod}',
                   style: const TextStyle(fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Price: ₹${item.customerPrice.toStringAsFixed(0)} | Phone: ${item.retailerPhone}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -774,6 +781,8 @@ class _RetailerDashboardScreenState
             Text(
               order.partName,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
@@ -788,6 +797,8 @@ class _RetailerDashboardScreenState
               Text(
                 'Address: ${order.deliveryAddress}',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
             const Divider(height: 20),
@@ -919,6 +930,8 @@ class _RetailerDashboardScreenState
             Text(
               order.applianceTitle,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             if (order.brand.isNotEmpty || order.condition.isNotEmpty) ...[
               const SizedBox(height: 4),
@@ -940,6 +953,8 @@ class _RetailerDashboardScreenState
               Text(
                 'Address: ${order.deliveryAddress}',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
             if (order.customerPhone.isNotEmpty) ...[

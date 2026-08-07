@@ -22,7 +22,12 @@ class BookingSuccessPage extends ConsumerWidget {
 
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.fromLTRB(
+          24.0,
+          24.0,
+          24.0,
+          MediaQuery.viewPaddingOf(context).bottom + 24.0,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -66,7 +71,7 @@ class BookingSuccessPage extends ConsumerWidget {
                       children: [
                         const Text('Booking ID', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                         Text(
-                          job != null ? job.id.substring(0, 8).toUpperCase() : 'PENDING',
+                          job != null ? (job.id.length >= 8 ? job.id.substring(0, 8) : job.id).toUpperCase() : 'PENDING',
                           style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                         ),
                       ],
